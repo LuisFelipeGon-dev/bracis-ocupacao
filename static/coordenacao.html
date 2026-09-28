@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="pt-BR" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <base href="/live/"> <!-- o site fica em /live: endereços sem "/" no começo são relativos a ele -->
+  <link rel="icon" href="static/favicon.ico" sizes="16x16 32x32 48x48">
+  <link rel="apple-touch-icon" href="static/apple-touch-icon.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Coordenação — BRACIS 2026</title>
+  <link rel="stylesheet" href="static/pico.min.css"> <!-- Pico CSS 2.1.1, guardado aqui (não depende de CDN) -->
+  <link rel="stylesheet" href="static/estilo.css">
+</head>
+<body>
+  <header class="topo">
+    <div class="container">
+      <a href="./"><img src="static/logo-bracis.webp" alt="BRACIS 2026" width="419" height="213"></a>
+      <span class="topo-rotulo">Coordenação</span>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Mensagens de erro ou confirmação aparecem aqui -->
+    <p id="mensagem" role="status"></p>
+
+    <!-- Tela 1: login da coordenação -->
+    <div id="tela-login" hidden>
+      <h1>Entrar no painel</h1>
+      <form id="form-login">
+        <label>
+          Senha da coordenação
+          <input type="password" name="senha" autocomplete="current-password" required>
+        </label>
+        <button type="submit">Entrar</button>
+      </form>
+    </div>
+
+    <!-- Tela 2: painel -->
+    <div id="tela-painel" hidden>
+      <h1>Painel da coordenação</h1>
+
+      <section>
+        <h2>Salas</h2>
+        <p><small id="atualizado">Carregando...</small></p>
+        <div class="rolagem">
+          <table>
+            <thead>
+              <tr>
+                <th>Sala</th>
+                <th>Agora</th>
+                <th>Entradas</th>
+                <th>Saídas</th>
+                <th>Último registro</th>
+              </tr>
+            </thead>
+            <tbody id="tabela-situacao"></tbody>
+          </table>
+        </div>
+        <p><small>Linhas destacadas: mais de 10 minutos sem nenhum registro.</small></p>
+        <a href="coordenacao/eventos.csv" role="button" class="secondary">Baixar histórico (CSV)</a>
+      </section>
+
+      <section>
+        <h2>Relatório por sessão</h2>
+        <p>
+          <small>
+            <strong>Entradas</strong>: quem entrou durante a sessão ou até 30 min antes dela começar.
+            <strong>Saídas</strong>: quem saiu durante a sessão ou até 30 min depois do fim.
+            <strong>Pico</strong>: o maior número de pessoas na sala durante a sessão
+            (inclui quem já estava lá antes; é a melhor medida de público).
+          </small>
+        </p>
+        <div class="rolagem">
+          <table>
+            <thead>
+              <tr>
+                <th>Dia</th><th>Horário</th><th>Sala</th><th>Sessão</th>
+                <th>Entradas</th><th>Saídas</th><th>Pico</th>
+              </tr>
+            </thead>
+            <tbody id="tabela-relatorio"></tbody>
+          </table>
+        </div>
+        <p id="relatorio-fora"><small></small></p>
+        <div class="botoes">
+          <button class="secondary" id="btn-atualizar-relatorio">Atualizar relatório</button>
+          <a href="coordenacao/relatorio.csv" role="button" class="secondary outline">Baixar relatório (CSV)</a>
+        </div>
+      </section>
+
+      <section>
+        <h2>Programação</h2>
+        <p id="programacao-resumo">Carregando...</p>
+        <p id="programacao-falha" class="erro"></p>
+        <ul id="programacao-erros" class="erro"></ul>
+        <button class="secondary" id="btn-atualizar-programacao">Atualizar programação agora</button>
+        <p><small>O site também relê a planilha sozinho a cada 10 minutos.</small></p>
+
+        <details>
+          <summary>Ver todas as sessões</summary>
+          <div class="rolagem">
+            <table>
+              <thead>
+                <tr><th>Dia</th><th>Horário</th><th>Sala</th><th>Título</th><th>Palestrante</th></tr>
+              </thead>
+              <tbody id="tabela-programacao"></tbody>
+            </table>
+          </div>
+        </details>
+      </section>
+
+      <section>
+        <h2>Voluntários</h2>
+
+        <!-- PINs recém-criados aparecem aqui, uma única vez -->
+        <article id="pins-gerados" hidden>
+          <header><strong>Repasse estes PINs agora: eles não aparecem de novo.</strong></header>
+          <div class="rolagem">
+            <table>
+              <thead><tr><th>Nome</th><th>E-mail</th><th>PIN</th></tr></thead>
+              <tbody id="tabela-pins"></tbody>
+            </table>
+          </div>
+          <ul id="erros-importacao" class="erro"></ul>
+          <button class="secondary outline" id="btn-fechar-pins">Já anotei, fechar</button>
+        </article>
+
+        <div class="rolagem">
+          <table>
+            <thead>
+              <tr><th>Nome</th><th>E-mail</th><th>Situação</th><th>Ações</th></tr>
+            </thead>
+            <tbody id="tabela-voluntarios"></tbody>
+          </table>
+        </div>
+
+        <details>
+          <summary>Cadastrar um voluntário</summary>
+          <form id="form-voluntario">
+            <label>Nome <input name="nome" required></label>
+            <label>E-mail <input type="email" name="email" required></label>
+            <button type="submit">Cadastrar</button>
+          </form>
+        </details>
+
+        <details>
+          <summary>Importar lista de voluntários</summary>
+          <form id="form-importar">
+            <label>
+              Uma pessoa por linha, no formato <code>nome, e-mail</code>.
+              Dá para copiar as duas colunas direto da planilha.
+              <textarea name="texto" rows="6" placeholder="Maria Silva, maria@exemplo.com"></textarea>
+            </label>
+            <button type="submit">Importar</button>
+          </form>
+        </details>
+      </section>
+
+      <footer class="centro">
+        <a href="#" id="link-sair">Sair do painel</a>
+      </footer>
+    </div>
+  </main>
+
+  <script src="static/coordenacao.js"></script>
+</body>
+</html>

@@ -1,0 +1,934 @@
+/* Visual das páginas públicas (inicial e de cada sala), do redesign de 27/09.
+   Celular primeiro: projetado em 390 px e conferido em 320 px. As variáveis (cores, fontes)
+   ficam no tokens.css. O voluntário e a coordenação NÃO usam este arquivo. */
+
+:root {
+  /* A borda dos botões do handoff (--border-strong) tem contraste 1,5:1 com o branco;
+     botões precisam de 3:1 para serem vistos. Esta é a mesma cor, mais escura (3,5:1). */
+  --borda-botao: #8F897C;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+/* "hidden" no HTML sempre esconde, mesmo em elementos com display: flex/grid neste arquivo
+   (sem isto, o esqueleto da página da sala continuava aparecendo depois de carregar). */
+[hidden] { display: none !important; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.45;
+}
+
+h1, h2, h3, p { margin: 0; }
+a { color: inherit; }
+img { max-width: 100%; }
+button { font: inherit; }
+
+:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Texto só para leitor de tela: existe na página, mas não aparece na tela */
+.so-leitor {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Coluna central: no celular ocupa tudo (com 20 px de margem); no computador, até 560 px */
+.largura {
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 0 var(--page-x);
+}
+
+/* Na página inicial, telas largas mostram os cartões em 2 colunas */
+@media (min-width: 900px) {
+  .pagina-inicio .largura { max-width: 960px; }
+}
+
+
+/* ---------- Topo: logo + selo AO VIVO + botão de idioma ---------- */
+
+.topo { border-bottom: 1px solid var(--border); }
+
+.topo .largura {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+.topo-logo { display: block; flex-shrink: 0; }
+
+.topo-logo img {
+  display: block;
+  height: 48px;
+  width: auto;
+}
+
+@media (min-width: 768px) {
+  .topo-logo img { height: 60px; }
+}
+
+.topo-direita {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.selo-ao-vivo {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  background: var(--ink);
+  color: #fff;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.selo-ao-vivo .ponto {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--live);
+  animation: pulso 1.6s ease-in-out infinite;
+}
+
+/* Sem conexão: ponto cinza e parado */
+.selo-ao-vivo.sem-conexao .ponto {
+  background: #9A9DA3;
+  animation: none;
+}
+
+@keyframes pulso {
+  50% { opacity: 0.4; }
+}
+
+/* Celular bem estreito: só "● 14:32", para caber logo + selo + botão */
+@media (max-width: 360px) {
+  .selo-rotulo { display: none; }
+}
+
+.botao-idioma {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--touch);
+  height: var(--touch);
+  padding: 0 10px;
+  border: 1px solid var(--borda-botao);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-decoration: none;
+}
+
+
+/* ---------- Página inicial: resumo ---------- */
+
+/* Resumo do topo num cartão azul (degradê com as cores da logo do BRACIS), a pedido do Luis */
+.resumo {
+  margin-top: 20px;
+  padding: 22px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-radius: var(--radius-card);
+  background: linear-gradient(135deg, #2b2d7c 0%, #23256a 60%, #1d4f86 100%);
+  color: #fff;
+}
+
+/* Textos dentro do cartão azul (contraste conferido: todos acima de 5:1) */
+.resumo .rotulo-mono { color: #9fd0f3; }
+.resumo .resumo-total .texto { color: rgb(255 255 255 / 85%); }
+.resumo .apoio,
+.resumo .fora-horario { color: rgb(255 255 255 / 80%); }
+.resumo .apoio.erro { color: #ffc2b0; }
+
+.rotulo-mono {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.numero-display {
+  font-family: var(--font-display);
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.resumo-total {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 10px;
+}
+
+.resumo-total .numero-display {
+  font-size: 76px;
+  letter-spacing: -3px;
+}
+
+.resumo-total .texto {
+  font-size: 17px;
+  line-height: 1.3;
+  color: var(--ink-2);
+  max-width: 150px;
+}
+
+.apoio {
+  font-size: 14px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.apoio.erro { color: var(--lvl-high-text); }
+
+/* Sem conexão, a linha mostra só "sem conexão · últimos dados de 14:32" */
+.apoio.erro .salas-ativas { display: none; }
+
+.fora-horario {
+  font-size: 14px;
+  color: var(--ink-3);
+}
+
+
+/* ---------- Seções, filtros e cartões ---------- */
+
+.secao {
+  padding-top: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.secao-titulo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 12px;
+}
+
+.secao-titulo h2 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 24px;
+  letter-spacing: -0.5px;
+}
+
+.pagina-sala .secao-titulo h2 { font-size: 20px; }
+
+.secao-titulo .dica {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.filtros {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  height: var(--touch);
+  padding: 0 16px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--borda-botao);
+  background: var(--surface);
+  color: var(--ink-2);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.chip[aria-pressed="true"] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+/* Em 320 px, os 4 filtros cabem numa linha (também em inglês, onde "Auditoriums" é maior):
+   margem lateral um pouco menor e menos espaço dentro e entre os botões */
+@media (max-width: 360px) {
+  :root { --page-x: 16px; }
+  .filtros { gap: 6px; }
+  .chip { padding: 0 11px; }
+}
+
+.cartoes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-card);
+}
+
+@media (min-width: 900px) {
+  .pagina-inicio .cartoes {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.cartao {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  padding: var(--pad-card);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.cartao:hover { border-color: var(--borda-botao); }
+
+.cartao-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.cartao-topo > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.tipo {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.cartao-nome {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 21px;
+  line-height: 1.15;
+  letter-spacing: -0.3px;
+  overflow-wrap: anywhere;
+}
+
+/* Selo do nível: cor + texto (nunca só a cor) */
+.nivel {
+  flex-shrink: 0;
+  padding: 6px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.nivel-livre { background: var(--track); color: var(--ink-3); }
+.nivel-tranquila { background: var(--lvl-low-bg); color: var(--lvl-low-text); }
+.nivel-moderada { background: var(--lvl-mid-bg); color: var(--lvl-mid-text); }
+.nivel-lotada,
+.nivel-cheia { background: var(--lvl-high-bg); color: var(--lvl-high-text); }
+.nivel-cheia { font-weight: 700; }
+
+.cartao-sessao {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Título da sessão: no máximo 2 linhas no cartão (completo na página da sala) */
+.sessao-titulo {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.sessao-horario {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.cartao-livre {
+  font-size: 15px;
+  color: var(--ink-3);
+}
+
+.cartao-lotacao {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Barra de lotação: trilho + parte colorida */
+.barra {
+  flex-grow: 1;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: var(--track);
+  overflow: hidden;
+}
+
+.barra-grossa { height: 14px; }
+
+.barra-cheia {
+  height: 100%;
+  border-radius: inherit;
+  transition: width 400ms ease-out;
+}
+
+.barra-cheia.nivel-livre,
+.barra-cheia.nivel-tranquila { background: var(--lvl-low-fill); }
+.barra-cheia.nivel-moderada { background: var(--lvl-mid-fill); }
+.barra-cheia.nivel-lotada,
+.barra-cheia.nivel-cheia { background: var(--lvl-high-fill); }
+
+.contagem {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.contagem .de-capacidade {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+/* Enquanto carrega: blocos cinza no formato dos cartões */
+.esqueleto {
+  height: 132px;
+  border-radius: var(--radius-card);
+  background: var(--track);
+  animation: esqueleto 1.4s ease-in-out infinite;
+}
+
+@keyframes esqueleto {
+  50% { opacity: 0.55; }
+}
+
+.vazio {
+  font-size: 15px;
+  color: var(--ink-3);
+}
+
+
+/* ---------- Rodapé ---------- */
+
+.rodape {
+  padding: 28px 0 36px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.rodape strong { color: var(--ink-2); }
+
+
+/* ---------- Página da sala ---------- */
+
+.voltar {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: var(--touch);
+  margin-top: 6px;
+  padding-right: 12px;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.sala-cabecalho {
+  padding-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sala-nome {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 40px;
+  line-height: 1.05;
+  letter-spacing: -1.2px;
+  overflow-wrap: anywhere;
+}
+
+.cartao-branco {
+  padding: var(--pad-card);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+}
+
+.lotacao {
+  margin-top: 18px;
+  padding: 20px;
+  border-radius: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.lotacao-topo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.lotacao-numero {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.lotacao-numero .numero-display {
+  font-size: 60px;
+  letter-spacing: -2px;
+}
+
+.lotacao-numero .lugares {
+  font-family: var(--font-mono);
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.frase {
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--ink-3);
+}
+
+.apoio-pequeno {
+  font-size: 13px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Sessão acontecendo agora: cartão azul */
+.cartao-agora {
+  padding: 16px;
+  border-radius: var(--radius-card);
+  background: var(--accent);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cartao-agora .linha-mono {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 12px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.cartao-agora .agora-titulo {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 21px;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.cartao-agora .agora-palestrante { font-size: 14px; }
+
+.progresso {
+  height: 4px;
+  margin-top: 4px;
+  border-radius: var(--radius-pill);
+  background: rgb(255 255 255 / 25%);
+  overflow: hidden;
+}
+
+.progresso > div {
+  height: 100%;
+  background: #fff;
+}
+
+.proxima-sessao {
+  margin-top: 6px;
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+
+/* Gráfico de barras por hora */
+.barras-horas {
+  height: 130px;
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.barra-hora {
+  flex: 1 1 0;
+  min-width: 0;
+  border-radius: 6px;
+  background: #C9C3B6;
+  transition: height 400ms ease-out;
+}
+
+.barra-hora.atual { background: var(--accent); }
+.barra-hora.futura { background: var(--track); }
+
+.rotulos-horas {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+/* Com muitas horas (tela estreita), barras mais juntas */
+.barras-horas.apertado,
+.rotulos-horas.apertado { gap: 3px; }
+
+.rotulos-horas span {
+  flex: 1 1 0;
+  min-width: 0;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.rotulos-horas .atual {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+details { margin-top: 10px; }
+
+summary {
+  min-height: var(--touch);
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.tabela {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.tabela th,
+.tabela td {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--divider);
+  text-align: left;
+}
+
+.tabela th {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+/* "A seguir nesta sala" e programação completa */
+.lista-seguir {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+}
+
+.lista-seguir li {
+  display: flex;
+  gap: 14px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--divider);
+}
+
+.lista-seguir li:last-child { border-bottom: 0; }
+
+.lista-seguir .horario {
+  flex-shrink: 0;
+  width: 48px;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Na programação completa o horário é "09:00–10:00": precisa de mais espaço */
+.lista-seguir.com-fim .horario { width: 96px; }
+
+.lista-seguir .titulo {
+  font-size: 15px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.lista-seguir .palestrante {
+  display: block;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* Sessões que já acabaram: cinza (sem transparência, para manter o contraste) */
+.lista-seguir .passada,
+.lista-seguir .passada .palestrante { color: var(--muted); }
+
+.lista-seguir .atual { background: var(--lvl-low-bg); }
+
+.etiqueta-agora {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--live);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  vertical-align: middle;
+}
+
+.dia-programacao {
+  padding: 14px 0 8px;
+}
+
+/* Esqueleto da página da sala enquanto carrega */
+.esqueleto-sala {
+  padding-top: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.esqueleto-sala .esqueleto:nth-child(1) { height: 56px; width: 70%; }
+.esqueleto-sala .esqueleto:nth-child(2) { height: 170px; }
+.esqueleto-sala .esqueleto:nth-child(3) { height: 120px; }
+
+
+/* ---------- Seletor Agora | Programação ---------- */
+
+.seletor {
+  margin-top: 16px;
+  max-width: 560px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  padding: 4px;
+  border-radius: 14px;
+  background: var(--segmented-bg);
+}
+
+.seletor a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--touch);
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ink-3);
+  text-decoration: none;
+}
+
+.seletor a[aria-current="page"] {
+  background: var(--surface);
+  color: var(--ink);
+  font-weight: 600;
+}
+
+
+/* ---------- Tela Programação ---------- */
+
+.dias {
+  border: 0;
+  margin: 18px 0 12px;
+  padding: 0;
+  min-width: 0;
+}
+
+.dias-botoes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
+  gap: 8px;
+  min-height: 60px; /* altura reservada antes dos botões chegarem: a página não "pula" */
+}
+
+.dia {
+  height: 60px;
+  padding: 0 4px;
+  border-radius: 14px;
+  border: 1px solid var(--borda-botao);
+  background: var(--surface);
+  color: var(--ink-2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  cursor: pointer;
+}
+
+.dia[aria-pressed="true"] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.dia-rotulo {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  white-space: nowrap;
+}
+
+.dia-numero {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Celular estreito: no dia de hoje aparece só "HOJE" (não cabe "TER · HOJE") */
+@media (max-width: 400px) {
+  .dia.e-hoje .dia-semana,
+  .dia-separador { display: none; }
+}
+
+/* Aqui o filtro ativo é escuro (o azul fica para o dia escolhido) */
+.pagina-programacao .chip[aria-pressed="true"] {
+  background: var(--ink);
+  border-color: var(--ink);
+}
+
+.blocos {
+  padding-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.bloco-horario {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  scroll-margin-top: 12px;
+}
+
+.bloco-cabecalho {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.bloco-hora {
+  font-family: var(--font-mono);
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.bloco-cabecalho .etiqueta-agora { margin-left: 0; }
+
+.bloco-linha {
+  flex-grow: 1;
+  height: 1px;
+  background: var(--border-strong);
+}
+
+.bloco-sessoes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cartao-prog {
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 16px;
+}
+
+.cartao-prog-texto {
+  flex-grow: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+/* Blocos que já acabaram: cinza (sem transparência, para manter o contraste) */
+.bloco-horario.passado .bloco-hora,
+.bloco-horario.passado .cartao { color: var(--muted); }
+
+
+/* Quem pede "menos movimento" no celular não vê animações */
+@media (prefers-reduced-motion: reduce) {
+  .selo-ao-vivo .ponto,
+  .esqueleto { animation: none; }
+  .barra-cheia,
+  .barra-hora { transition: none; }
+}

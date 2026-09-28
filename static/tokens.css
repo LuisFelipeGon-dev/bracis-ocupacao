@@ -1,0 +1,51 @@
+/* Cores, fontes e tamanhos das páginas públicas.
+   As fontes ficam em static/fontes/ (licença OFL), sem depender do Google Fonts. */
+
+@font-face {
+  font-family: "Bricolage Grotesque";
+  src: url("fontes/bricolage-grotesque.woff2") format("woff2");
+  font-weight: 200 800; /* fonte "variável": um arquivo para todas as espessuras */
+  font-display: swap;   /* mostra o texto na hora com outra fonte e troca quando esta chegar */
+}
+@font-face { font-family: "IBM Plex Sans"; src: url("fontes/ibm-plex-sans-400.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "IBM Plex Sans"; src: url("fontes/ibm-plex-sans-500.woff2") format("woff2"); font-weight: 500; font-display: swap; }
+@font-face { font-family: "IBM Plex Sans"; src: url("fontes/ibm-plex-sans-600.woff2") format("woff2"); font-weight: 600; font-display: swap; }
+@font-face { font-family: "IBM Plex Mono"; src: url("fontes/ibm-plex-mono-500.woff2") format("woff2"); font-weight: 500; font-display: swap; }
+@font-face { font-family: "IBM Plex Mono"; src: url("fontes/ibm-plex-mono-600.woff2") format("woff2"); font-weight: 600; font-display: swap; }
+
+:root {
+  /* Cores base */
+  --bg: #F5F3EE;            /* fundo da página */
+  --surface: #FFFFFF;       /* cards */
+  --border: #E4DFD4;        /* borda de cards e divisórias */
+  --border-strong: #DAD4C7; /* borda de botões/chips inativos */
+  --divider: #EFEBE3;       /* linhas internas de listas */
+  --track: #ECE8E0;         /* fundo das barras de lotação */
+  --segmented-bg: #E9E5DC;  /* fundo do seletor Agora/Programação */
+
+  --ink: #15171C;           /* texto principal */
+  --ink-2: #33363D;         /* texto secundário forte */
+  --ink-3: #4A4E57;         /* texto de apoio */
+  --muted: #5B5F68;         /* rótulos, legendas (contraste >= 4.5:1 no --bg) */
+
+  --accent: #2B3A8C;        /* chip ativo, dia ativo, card "Agora" */
+  --live: #F2744B;          /* ponto "ao vivo" e selo AGORA */
+
+  /* Níveis de lotação (diferem em claridade, não só em cor) */
+  --lvl-low-fill: #7FB8AC;  --lvl-low-text: #1F5A4E;  --lvl-low-bg: #DDEFEA;   /* Tranquila  < 40% */
+  --lvl-mid-fill: #E3A23B;  --lvl-mid-text: #7A5200;  --lvl-mid-bg: #FAEFD6;   /* Moderada 40–74% */
+  --lvl-high-fill: #B8430E; --lvl-high-text: #8C300A; --lvl-high-bg: #FBE4D8;  /* Lotada   >= 75% */
+
+  /* Tipografia */
+  --font-display: "Bricolage Grotesque", Georgia, serif; /* títulos e números grandes */
+  --font-body: "IBM Plex Sans", system-ui, sans-serif;   /* texto corrido */
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace; /* horários, contagens, rótulos em caixa alta */
+
+  /* Espaçamento e forma */
+  --page-x: 20px;       /* margem lateral no celular */
+  --gap-card: 10px;     /* entre cards */
+  --pad-card: 16px;
+  --radius-card: 18px;
+  --radius-pill: 999px;
+  --touch: 44px;        /* altura mínima de qualquer alvo de toque */
+}

@@ -1,0 +1,3 @@
+# Scripts do Linux precisam de quebra de linha no formato do Linux (LF),
+# senão o bash dá erro. Isto garante o formato certo mesmo editando no Windows.
+*.sh text eol=lf

@@ -1,0 +1,755 @@
+/* Visual do site, em cima do Pico.css.
+   As cores ficam em variáveis (--nome): trocar aqui muda o site inteiro. */
+
+/* ---------- Cores e fontes ---------- */
+
+/* Fonte Inter guardada aqui mesmo (static/fontes/inter.woff2), sem depender do Google Fonts.
+   É uma fonte "variável": um arquivo só serve para todas as espessuras (400 a 700).
+   Versão 5.3.0 do pacote @fontsource-variable/inter, só letras latinas (inclui ã, ç, é). */
+@font-face {
+  font-family: "Inter";
+  src: url("fontes/inter.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap; /* mostra o texto na hora com outra fonte e troca quando a Inter chegar */
+}
+
+:root {
+  /* Cores da logo do BRACIS */
+  --marinho: #2b2d7c;
+  --marinho-escuro: #1f2160;
+  /* As cores abaixo foram escurecidas um pouco (27/09) para passar no contraste
+     mínimo de acessibilidade (WCAG AA): 4,5:1 para texto, 3:1 para barras e bordas. */
+  --azul: #2a71ad;            /* era #2f7fc1 (4,26:1 no branco; agora 5,17:1) */
+  --azul-fundo: #eaf3fb;
+
+  --fundo: #f4f6fb;
+  --superficie: #ffffff;
+  --borda: #e2e6ef;           /* só decorativa (separa cartões) */
+  --borda-controle: #858ba3;  /* borda de botões/filtros: precisa ser vista (3,1:1) */
+  --texto: #1d2140;
+  --texto-2: #4a5070;
+  --texto-fraco: #666c8a;
+
+  /* Situação da sala: cor do selo (texto e fundo) e da barra de lotação */
+  --ok: #167231;          /* era #1a7f37 (4,47:1 no fundo verde; agora 5,31:1) */
+  --ok-fundo: #e6f4ea;
+  --ok-barra: #2e9d55;
+  --alerta: #8a5300;
+  --alerta-fundo: #fff3dc;
+  --alerta-barra: #b07d00; /* era #e0a100 (1,98:1 no trilho; agora 3,18:1) */
+  --lotado: #b3261e;
+  --lotado-fundo: #fdecea;
+  --lotado-barra: #d93025;
+  --trilho: #edf0f5;
+
+  --raio: 14px;
+  --sombra: 0 1px 2px rgb(29 33 64 / 6%), 0 4px 16px rgb(29 33 64 / 6%);
+}
+
+/* O site usa sempre o tema claro (a logo tem fundo branco).
+   Aqui trocamos as cores padrão do Pico pelas do BRACIS. */
+:root[data-theme="light"] {
+  --pico-font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --pico-background-color: var(--fundo);
+  --pico-color: var(--texto);
+  --pico-muted-color: var(--texto-fraco);
+  --pico-muted-border-color: var(--borda);
+  --pico-h1-color: var(--texto);
+  --pico-h2-color: var(--texto);
+  --pico-h3-color: var(--texto);
+  --pico-primary: var(--marinho);
+  --pico-primary-background: var(--marinho);
+  --pico-primary-border: var(--marinho);
+  --pico-primary-hover: var(--marinho-escuro);
+  --pico-primary-hover-background: var(--marinho-escuro);
+  --pico-primary-hover-border: var(--marinho-escuro);
+  --pico-primary-focus: rgb(47 127 193 / 35%);
+  --pico-primary-underline: rgb(43 45 124 / 40%);
+  --pico-border-radius: 10px;
+}
+
+body {
+  background: var(--fundo);
+}
+
+/* ---------- Topo com a logo (todas as páginas) ---------- */
+
+.topo {
+  background: var(--superficie);
+  border-bottom: 1px solid var(--borda);
+  margin-bottom: 1.5rem;
+}
+
+.topo .container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-top: 0.6rem;
+  padding-bottom: 0.6rem;
+}
+
+.topo img {
+  display: block;
+  height: 76px;
+  width: auto;
+}
+
+@media (max-width: 640px) {
+  .topo img { height: 56px; }
+}
+
+/* Lado direito do topo: "Atualizado às..." + botão EN/PT */
+.topo-direita {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.botao-idioma {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px; /* área confortável para o dedo */
+  padding: 0 0.6rem;
+  border: 1px solid var(--borda-controle);
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--marinho);
+  text-decoration: none;
+}
+
+.botao-idioma:hover {
+  background: var(--azul-fundo);
+}
+
+.topo-rotulo {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--texto-2);
+  text-align: right;
+}
+
+/* "● Ao vivo": a bolinha pisca devagar para mostrar que os números se atualizam */
+.ao-vivo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  color: var(--texto-2);
+}
+
+.ao-vivo::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ok-barra);
+  animation: piscar 2s ease-in-out infinite;
+}
+
+.ao-vivo.erro {
+  color: var(--lotado);
+}
+
+.ao-vivo.erro::before {
+  background: var(--lotado-barra);
+  animation: none;
+}
+
+@keyframes piscar {
+  50% { opacity: 0.3; }
+}
+
+/* Quem pede "menos movimento" no celular não vê a animação */
+@media (prefers-reduced-motion: reduce) {
+  .ao-vivo::before { animation: none; }
+}
+
+/* Bloco de apresentação do evento (página inicial) */
+.apresentacao {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 1.5rem;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding: 1.75rem 2rem;
+  border-radius: var(--raio);
+  background: linear-gradient(135deg, var(--marinho) 0%, #23256a 60%, #1d4f86 100%);
+  color: #fff;
+}
+
+.apresentacao h1 {
+  color: #fff;
+  font-size: 1.8rem;
+  line-height: 1.2;
+  margin-bottom: 0.6rem;
+}
+
+.apresentacao p {
+  color: rgb(255 255 255 / 85%);
+  margin: 0;
+  max-width: 44rem;
+}
+
+.apresentacao .apresentacao-quando {
+  color: #9fd0f3;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+}
+
+.apresentacao-numero {
+  text-align: center;
+  padding: 1rem 1.5rem;
+  border-radius: 12px;
+  background: rgb(255 255 255 / 10%);
+  min-width: 10rem;
+}
+
+.apresentacao-numero strong {
+  display: block;
+  font-size: 2.75rem;
+  line-height: 1;
+}
+
+.apresentacao-numero span {
+  font-size: 0.85rem;
+  color: rgb(255 255 255 / 85%);
+}
+
+/* No celular a apresentação fica curta: as salas (o motivo de abrir o site)
+   precisam aparecer logo, sem rolar muito. */
+@media (max-width: 640px) {
+  .apresentacao { grid-template-columns: 1fr; gap: 0.9rem; padding: 1.25rem; margin-bottom: 1.5rem; }
+  .apresentacao h1 { font-size: 1.3rem; margin-bottom: 0; }
+  .apresentacao-descricao { display: none; }
+  /* Total numa linha só: "83 pessoas nas salas agora" */
+  .apresentacao-numero {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    padding: 0.6rem 1rem;
+    text-align: left;
+    min-width: 0;
+  }
+  .apresentacao-numero strong { display: inline; font-size: 2rem; }
+  .apresentacao-numero span { font-size: 0.95rem; }
+}
+
+.titulo-pagina {
+  margin-bottom: 0.25rem;
+  font-size: 1.75rem;
+}
+
+.subtitulo {
+  color: var(--texto-2);
+  margin-bottom: 1.25rem;
+}
+
+/* ---------- Selo de situação e barra de lotação ---------- */
+
+/* O selo sempre tem símbolo + texto: a situação nunca depende só da cor */
+.selo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.selo-ok { color: var(--ok); background: var(--ok-fundo); }
+.selo-alerta { color: var(--alerta); background: var(--alerta-fundo); }
+.selo-lotado { color: var(--lotado); background: var(--lotado-fundo); }
+
+.medidor {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--trilho);
+  overflow: hidden;
+}
+
+.medidor-barra {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
+
+.medidor-barra.selo-ok { background: var(--ok-barra); }
+.medidor-barra.selo-alerta { background: var(--alerta-barra); }
+.medidor-barra.selo-lotado { background: var(--lotado-barra); }
+
+/* ---------- Página pública: filtros e cartões ---------- */
+
+.filtros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.filtros button {
+  flex: 0 0 auto;
+  width: auto;
+  margin: 0;
+  min-height: 44px; /* área mínima confortável para tocar com o dedo */
+  padding: 0.35rem 1rem;
+  font-size: 0.9rem;
+  border-radius: 999px;
+  border: 1px solid var(--borda-controle);
+  background: var(--superficie);
+  color: var(--texto-2);
+}
+
+.filtros button[aria-pressed="true"] {
+  background: var(--marinho);
+  border-color: var(--marinho);
+  color: #fff;
+}
+
+/* Cartões lado a lado; no celular, um embaixo do outro */
+.cartoes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
+  gap: 1rem;
+}
+
+.cartao {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 1.1rem 1.2rem;
+  background: var(--superficie);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio);
+  box-shadow: var(--sombra);
+  color: inherit;
+  text-decoration: none;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.cartao:hover,
+.cartao:focus-visible {
+  transform: translateY(-2px);
+  border-color: var(--azul);
+  text-decoration: none;
+}
+
+.cartao-topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.tipo {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--texto-fraco);
+}
+
+.cartao h2 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.contagem {
+  margin: 0;
+  color: var(--texto-2);
+}
+
+.contagem strong {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--texto);
+  margin-right: 0.15rem;
+}
+
+.cartao .programacao {
+  border-top: 1px solid var(--borda);
+  padding-top: 0.6rem;
+  font-size: 0.88rem;
+  color: var(--texto-2);
+}
+
+.cartao .programacao p {
+  margin: 0.15rem 0;
+}
+
+.cartao .programacao strong {
+  color: var(--texto);
+}
+
+.ver-mais {
+  margin-top: auto;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--azul);
+}
+
+.vazio {
+  color: var(--texto-fraco);
+  font-style: italic;
+}
+
+/* ---------- Página de uma sala ---------- */
+
+.voltar {
+  display: inline-block;
+  margin-bottom: 1rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.sala-cabecalho {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.sala-cabecalho h1 {
+  margin: 0;
+  font-size: 1.9rem;
+}
+
+.bloco {
+  background: var(--superficie);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio);
+  box-shadow: var(--sombra);
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.bloco h2 {
+  font-size: 1.05rem;
+  margin-bottom: 0.9rem;
+}
+
+/* Número grande + dois números menores lado a lado */
+.resumo {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 1rem;
+  align-items: end;
+}
+
+@media (max-width: 640px) {
+  .resumo { grid-template-columns: 1fr 1fr; }
+  .resumo .principal { grid-column: 1 / -1; }
+}
+
+.rotulo {
+  font-size: 0.85rem;
+  color: var(--texto-2);
+  margin: 0 0 0.2rem;
+}
+
+.numero-grande {
+  font-size: 3.5rem;
+  font-weight: 700;
+  line-height: 1;
+  margin: 0 0 0.3rem;
+}
+
+/* "de 200 lugares · 42% ocupado" na linha de baixo: ao lado do número não cabia
+   e quebrava no meio ("42%" numa linha, "ocupado" na outra). */
+.numero-grande small {
+  display: block;
+  margin-top: 0.4rem;
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: var(--texto-2);
+}
+
+.numero-medio {
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1.1;
+  margin: 0;
+}
+
+.resumo .medidor {
+  margin-top: 0.6rem;
+}
+
+/* Sessão acontecendo agora */
+.agora-titulo {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0 0 0.2rem;
+}
+
+.agora-info {
+  color: var(--texto-2);
+  margin: 0 0 0.75rem;
+}
+
+.progresso-sessao .medidor-barra {
+  background: var(--azul);
+}
+
+.progresso-legenda {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: var(--texto-fraco);
+  margin-top: 0.3rem;
+}
+
+/* Programação da sala */
+.dia {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--texto-fraco);
+  margin: 1rem 0 0.4rem;
+}
+
+.dia:first-of-type {
+  margin-top: 0;
+}
+
+.lista-sessoes {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.lista-sessoes li {
+  list-style: none;
+  display: grid;
+  grid-template-columns: 7.5rem 1fr;
+  gap: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  margin: 0;
+  border-radius: 10px;
+}
+
+@media (max-width: 640px) {
+  .lista-sessoes li { grid-template-columns: 6.2rem 1fr; gap: 0.5rem; padding: 0.6rem 0.5rem; }
+}
+
+.lista-sessoes .horario {
+  font-variant-numeric: tabular-nums;
+  color: var(--texto-2);
+  font-size: 0.9rem;
+}
+
+.lista-sessoes .titulo {
+  font-weight: 600;
+}
+
+.lista-sessoes .palestrante {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--texto-2);
+}
+
+/* Sessões que já acabaram: cinza (e não transparência, que deixava o texto fraco demais) */
+.lista-sessoes li.passada,
+.lista-sessoes li.passada .horario,
+.lista-sessoes li.passada .palestrante {
+  color: var(--texto-fraco);
+}
+
+.lista-sessoes li.passada .titulo {
+  font-weight: 500;
+}
+
+.lista-sessoes li.atual {
+  background: var(--azul-fundo);
+}
+
+.etiqueta-agora {
+  display: inline-block;
+  margin-left: 0.4rem;
+  padding: 0 0.45rem;
+  border-radius: 999px;
+  background: var(--azul);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  vertical-align: middle;
+}
+
+/* ---------- Gráfico do movimento do dia ---------- */
+
+.grafico {
+  position: relative;
+}
+
+.grafico svg {
+  display: block;
+  width: 100%;
+  height: 240px;
+  overflow: visible;
+  touch-action: pan-y; /* no celular, arrastar na horizontal mostra os valores */
+}
+
+.grafico .grade { stroke: var(--borda); stroke-width: 1; }
+.grafico .eixo-texto { fill: var(--texto-fraco); font-size: 11px; font-variant-numeric: tabular-nums; }
+.grafico .capacidade { stroke: var(--lotado-barra); stroke-width: 1; opacity: 0.6; }
+.grafico .capacidade-texto { fill: var(--texto-2); font-size: 11px; }
+.grafico .area { fill: var(--azul); opacity: 0.1; }
+.grafico .linha { fill: none; stroke: var(--azul); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.grafico .ponto { fill: var(--azul); stroke: var(--superficie); stroke-width: 2; }
+.grafico .valor-final { fill: var(--texto); font-size: 12px; font-weight: 700; }
+.grafico .mira { stroke: var(--texto-fraco); stroke-width: 1; }
+
+.grafico + details {
+  margin-top: 1rem;
+  margin-bottom: 0;
+  font-size: 0.9rem;
+}
+
+.dica {
+  position: absolute;
+  top: 0;
+  pointer-events: none;
+  background: var(--texto);
+  color: #fff;
+  padding: 0.35rem 0.6rem;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+
+.dica strong {
+  display: block;
+  font-size: 0.95rem;
+}
+
+/* ---------- Página do voluntário ---------- */
+
+.centro {
+  text-align: center;
+}
+
+.largura-total {
+  width: 100%;
+}
+
+/* Texto só para leitor de tela: existe na página, mas não aparece na tela */
+.so-leitor {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.ocupacao {
+  text-align: center;
+  font-size: 4rem;
+  font-weight: 700;
+  line-height: 1.1;
+  margin-bottom: 0.5rem;
+}
+
+.ocupacao small {
+  font-size: 1.5rem;
+  color: var(--pico-muted-color);
+}
+
+/* Botões +1 e −1: grandes, para acertar fácil com o dedo */
+.btn-grande {
+  width: 100%;
+  font-size: 1.6rem;
+  padding: 1.25rem;
+  margin-bottom: 0.75rem;
+}
+
+#lista-ambientes button {
+  width: 100%;
+  margin-bottom: 0.5rem;
+}
+
+#mensagem {
+  min-height: 1.5em;
+  text-align: center;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.erro,
+.lotado {
+  color: var(--lotado);
+}
+
+.ok {
+  color: var(--ok);
+}
+
+footer {
+  margin-top: 1.5rem;
+  font-size: 0.9rem;
+}
+
+footer p {
+  margin-bottom: 0.5rem;
+}
+
+/* "Trocar sala" e "Trocar voluntário": lado a lado, altura boa para o dedo */
+.botoes-rodape {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.botoes-rodape button {
+  margin: 0;
+  min-height: 44px;
+  padding: 0.5rem;
+  font-size: 0.95rem;
+}
+
+/* ---------- Painel da coordenação ---------- */
+
+/* Tabelas largas: no celular, rolam para o lado dentro da própria caixa */
+.rolagem {
+  overflow-x: auto;
+}
+
+/* Sala sem registro há mais de 10 minutos */
+tr.parada td {
+  background-color: var(--alerta-fundo);
+}
+
+/* PINs recém-gerados: letra de largura fixa, fácil de ler e copiar */
+.pin {
+  font-family: var(--pico-font-family-monospace);
+  font-weight: 700;
+}
+
+.botoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.botoes > * {
+  width: auto;
+  margin: 0;
+}
+
+td button {
+  margin: 0 0.25rem 0 0;
+  padding: 0.25rem 0.6rem;
+  font-size: 0.85rem;
+}

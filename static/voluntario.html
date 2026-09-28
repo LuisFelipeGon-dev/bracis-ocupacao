@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="pt-BR" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <base href="/live/"> <!-- o site fica em /live: endereços sem "/" no começo são relativos a ele -->
+  <link rel="icon" href="static/favicon.ico" sizes="16x16 32x32 48x48">
+  <link rel="apple-touch-icon" href="static/apple-touch-icon.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Contagem — BRACIS 2026</title>
+  <link rel="stylesheet" href="static/pico.min.css"> <!-- Pico CSS 2.1.1, guardado aqui (não depende de CDN) -->
+  <link rel="stylesheet" href="static/estilo.css">
+</head>
+<body>
+  <header class="topo">
+    <div class="container">
+      <img src="static/logo-bracis.webp" alt="BRACIS 2026" width="419" height="213">
+      <span class="topo-rotulo">Contagem</span>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Mensagens de erro ou confirmação aparecem aqui -->
+    <p id="mensagem" role="status"></p>
+
+    <!-- Tela 1: login -->
+    <section id="tela-login" hidden>
+      <h1>Entrar</h1>
+      <form id="form-login">
+        <label>
+          E-mail
+          <input type="email" name="email" autocomplete="username" required>
+        </label>
+        <label>
+          PIN
+          <input type="password" name="pin" inputmode="numeric" autocomplete="current-password" required>
+        </label>
+        <button type="submit">Entrar</button>
+      </form>
+    </section>
+
+    <!-- Tela 2: escolher em qual sala o voluntário está contando -->
+    <section id="tela-ambientes" hidden>
+      <p>Olá, <strong class="nome-voluntario"></strong>! Em qual sala você está contando?</p>
+      <div id="lista-ambientes"></div>
+      <button class="secondary outline largura-total" data-acao="sair">Trocar voluntário</button>
+    </section>
+
+    <!-- Tela 3: contagem -->
+    <section id="tela-contagem" hidden>
+      <h2 id="nome-ambiente" class="centro"></h2>
+      <p class="ocupacao">
+        <span id="ocupacao">0</span><small> / <span id="capacidade">0</span></small>
+      </p>
+      <p id="aviso-lotado" class="centro erro" hidden>Lotado</p>
+
+      <button id="btn-entrou" class="btn-grande">+1 Entrou</button>
+      <button id="btn-saiu" class="btn-grande secondary">−1 Saiu</button>
+
+      <label for="qtd-grupo">Várias pessoas de uma vez</label>
+      <fieldset role="group">
+        <input type="number" id="qtd-grupo" min="1" max="500" inputmode="numeric" placeholder="Quantas?">
+        <button id="btn-grupo-entrou">Entraram</button>
+        <button id="btn-grupo-saiu" class="secondary">Saíram</button>
+      </fieldset>
+
+      <button id="btn-desfazer" class="contrast outline largura-total">Desfazer meu último registro</button>
+
+      <footer class="centro">
+        <p>Contando: <strong class="nome-voluntario"></strong></p>
+        <!-- Botões (e não links) para ficarem fáceis de tocar: pelo menos 44 px -->
+        <div class="botoes-rodape">
+          <button class="secondary outline" data-acao="trocar-sala">Trocar sala</button>
+          <button class="secondary outline" data-acao="sair">Trocar voluntário</button>
+        </div>
+      </footer>
+    </section>
+  </main>
+
+  <script src="static/voluntario.js"></script>
+</body>
+</html>

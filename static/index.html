@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <base href="/live/"> <!-- o site fica em /live: endereços sem "/" no começo são relativos a ele -->
+  <link rel="icon" href="static/favicon.ico" sizes="16x16 32x32 48x48">
+  <link rel="apple-touch-icon" href="static/apple-touch-icon.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#F5F3EE">
+  <title data-t="titulo_inicio">Salas — BRACIS 2026</title>
+  <!-- ?v=4: muda a cada atualização, para o celular não misturar arquivo novo com antigo guardado -->
+  <link rel="preload" href="static/fontes/bricolage-grotesque.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="static/tokens.css?v=4">
+  <link rel="stylesheet" href="static/publico.css?v=4">
+</head>
+<body class="pagina-inicio">
+  <header class="topo">
+    <div class="largura">
+      <a href="./" class="topo-logo"><img src="static/logo-bracis.webp" alt="BRACIS 2026" width="419" height="213"></a>
+      <div class="topo-direita">
+        <!-- "● AO VIVO · 14:32": hora da última atualização. Em telas estreitas, só "● 14:32" -->
+        <span id="selo-ao-vivo" class="selo-ao-vivo">
+          <span class="ponto" aria-hidden="true"></span>
+          <span><span class="selo-rotulo"><span data-t="ao_vivo">AO VIVO</span> · </span><span id="selo-hora">--:--</span></span>
+        </span>
+        <!-- Só para leitor de tela: anuncia quando a conexão cai ou volta -->
+        <span id="aviso-conexao" class="so-leitor" role="status"></span>
+        <!-- Troca o idioma (o idioma.js ajusta o endereço e o texto: EN ou PT) -->
+        <a id="botao-idioma" class="botao-idioma" href="?lang=en" lang="en">EN</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="largura">
+    <!-- Resumo: dia, total de pessoas e situação da atualização -->
+    <section class="resumo">
+      <p id="dia-periodo" class="rotulo-mono"></p>
+      <p class="resumo-total">
+        <!-- aria-live: o leitor de tela anuncia o total quando ele muda (e só ele) -->
+        <span id="total-pessoas" class="numero-display" aria-live="polite">–</span>
+        <span class="texto" data-t="pessoas_nas_salas">pessoas nas salas agora</span>
+      </p>
+      <p id="fora-horario" class="fora-horario" hidden></p>
+      <p id="linha-apoio" class="apoio"><span id="salas-ativas" class="salas-ativas"></span><span id="estado-atualizacao"></span></p>
+    </section>
+
+    <!-- Seletor Agora | Programação -->
+    <nav class="seletor" aria-label="Seções" data-t-aria="secoes">
+      <a href="./" aria-current="page" data-t="aba_agora">Agora</a>
+      <a href="programacao" data-t="aba_programacao">Programação</a>
+    </nav>
+
+    <section class="secao">
+      <div class="secao-titulo">
+        <h2 data-t="acontecendo_agora">Acontecendo agora</h2>
+        <span class="dica" data-t="toque_para_detalhes">toque para detalhes</span>
+      </div>
+
+      <!-- Filtro por tipo de sala. fieldset + legend: o leitor de tela anuncia "Filtrar por tipo, grupo" -->
+      <fieldset class="filtros">
+        <legend class="so-leitor" data-t="filtrar_por_tipo">Filtrar por tipo</legend>
+        <button type="button" class="chip" data-tipo="" aria-pressed="true" data-t="filtro_todos">Todos</button>
+        <button type="button" class="chip" data-tipo="auditorio" aria-pressed="false" data-t="filtro_auditorios">Auditórios</button>
+        <button type="button" class="chip" data-tipo="sala" aria-pressed="false" data-t="filtro_salas">Salas</button>
+        <button type="button" class="chip" data-tipo="laboratorio" aria-pressed="false" data-t="filtro_laboratorio">Lab</button>
+      </fieldset>
+
+      <!-- Os cartões são criados pelo participante.js. Enquanto isso, blocos cinza no formato deles. -->
+      <div id="cartoes" class="cartoes" aria-busy="true">
+        <div class="esqueleto" aria-hidden="true"></div>
+        <div class="esqueleto" aria-hidden="true"></div>
+        <div class="esqueleto" aria-hidden="true"></div>
+        <div class="esqueleto" aria-hidden="true"></div>
+      </div>
+    </section>
+
+    <footer class="rodape">
+      <p data-t="rodape_contagem">A contagem é feita por voluntários na porta de cada sala.</p>
+      <!-- Datas e local: confirmar com a organização -->
+      <p><strong data-t="nome_evento">36ª Conferência Brasileira de Sistemas Inteligentes</strong><br>
+        <span data-t="quando_onde">19 a 22 de outubro de 2026 · UniSENAI, Cuiabá (MT)</span></p>
+      <p data-t="descricao_evento">
+        O BRACIS é um dos principais eventos científicos de Inteligência Artificial e
+        Inteligência Computacional do Brasil, promovido pela Sociedade Brasileira de Computação.
+        Nesta página você acompanha, em tempo real, a programação e a lotação de cada sala
+        para escolher onde assistir.
+      </p>
+    </footer>
+  </main>
+
+  <script src="static/idioma.js?v=4"></script> <!-- primeiro: os outros usam a função t() -->
+  <script src="static/comum.js?v=4"></script>
+  <script src="static/participante.js?v=4"></script>
+</body>
+</html>
