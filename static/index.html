@@ -5,36 +5,34 @@
   <base href="/live/"> <!-- o site fica em /live: endereços sem "/" no começo são relativos a ele -->
   <link rel="icon" href="static/favicon.ico" sizes="16x16 32x32 48x48">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Room occupancy — BRACIS 2026</title>
-  <!-- Tela do totem (em pé, sem interação). ?v=5: muda a cada atualização, para o navegador
+  <title>Room occupancy · BRACIS 2026</title>
+  <!-- Tela do totem (em pé, sem interação). ?v=6: muda a cada atualização, para o navegador
        não misturar arquivo novo com antigo guardado -->
   <link rel="preload" href="static/fontes/bricolage-grotesque.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="static/tokens.css?v=5">
-  <link rel="stylesheet" href="static/publico.css?v=5">
+  <link rel="stylesheet" href="static/tokens.css?v=6">
+  <link rel="stylesheet" href="static/publico.css?v=6">
 </head>
 <body>
   <header class="topo">
     <!-- Para trocar o logo: substitua o arquivo e ajuste o nome/largura/altura aqui -->
     <img class="logo" src="static/logo-bracis.webp" alt="BRACIS 2026" width="419" height="213">
     <div class="topo-direita">
-      <span id="selo-ao-vivo" class="selo-ao-vivo">
-        <span class="ponto" aria-hidden="true"></span>
-        <span id="selo-texto">LIVE · --:--</span>
-      </span>
-      <p id="dia" class="rotulo-mono"></p>
+      <p class="relogio"><span id="dia"></span> <span id="hora" class="hora">--:--</span></p>
+      <!-- "● Live" ou, sem conexão, "● Reconnecting · last update 09:32" -->
+      <p id="estado" class="estado"><span class="ponto" aria-hidden="true"></span><span id="estado-texto">Live</span></p>
     </div>
   </header>
 
   <h1 class="titulo">Room occupancy</h1>
 
-  <!-- Os cartões são criados pelo participante.js -->
-  <main id="cartoes" class="cartoes"></main>
+  <!-- As salas são criadas pelo participante.js -->
+  <main id="salas" class="salas"></main>
 
   <footer class="rodape">
-    Counted live by volunteers at each door · % of the room's current capacity
+    Counted live by volunteers at each door · % of each room's current capacity
   </footer>
 
-  <script src="static/comum.js?v=5"></script>
-  <script src="static/participante.js?v=5"></script>
+  <script src="static/comum.js?v=6"></script>
+  <script src="static/participante.js?v=6"></script>
 </body>
 </html>

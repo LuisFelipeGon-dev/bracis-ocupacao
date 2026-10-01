@@ -2,8 +2,6 @@
 // Estas funções não mexem na página: recebem dados e devolvem resultados,
 // e por isso dá para testá-las no Node (testes/unidade/teste_publico.js).
 
-const NOMES_TIPO = { sala: "Room", auditorio: "Auditorium", laboratorio: "Lab" };
-
 // Atalho para pegar um elemento pelo id.
 const $ = (id) => document.getElementById(id);
 
@@ -70,10 +68,9 @@ function quandoProxima(sessao) {
   return sessao.hoje ? hora(sessao.inicio) : `${diaCurto(sessao.inicio)}, ${hora(sessao.inicio)}`;
 }
 
-// "TUE 20 OCT" (data do topo da tela)
+// "Tue 20 Oct" (data do topo da tela)
 function rotuloDia(data) {
   return data
     .toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })
-    .replace(",", "")
-    .toUpperCase();
+    .replace(",", "");
 }

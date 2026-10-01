@@ -104,7 +104,7 @@ Para instalar num servidor novo, veja [deploy/INSTALACAO.md](deploy/INSTALACAO.m
 ## Tecnologias
 
 Python (FastAPI, Uvicorn), SQLite, HTML, CSS e JavaScript sem framework. Nginx na frente, no servidor da
-UFMT. Fontes Bricolage Grotesque, IBM Plex Sans e IBM Plex Mono guardadas no próprio site (licença OFL).
+UFMT. Fontes Bricolage Grotesque e IBM Plex Sans guardadas no próprio site (licença OFL).
 
 ## Licença
 

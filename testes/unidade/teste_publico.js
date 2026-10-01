@@ -58,7 +58,7 @@ confere("não altera a lista original", lista[0].codigo, "S1");
 // quandoProxima / rotuloDia
 confere("próxima hoje: só a hora", quandoProxima({ inicio: "2026-10-20T14:00", hoje: true }), "14:00");
 confere("próxima outro dia: dia e hora", quandoProxima({ inicio: "2026-10-21T09:00", hoje: false }), "Wed 21 Oct, 09:00");
-confere("rótulo do dia", rotuloDia(new Date(2026, 9, 20)), "TUE 20 OCT");
+confere("rótulo do dia", rotuloDia(new Date(2026, 9, 20)), "Tue 20 Oct");
 
 console.log(falhas ? `\n${falhas} FALHA(S)` : "\nTudo certo.");
 process.exit(falhas ? 1 : 0);
