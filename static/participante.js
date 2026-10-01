@@ -1,120 +1,95 @@
-// Página inicial ("Agora"): total de pessoas e um cartão por sala. Sem login.
-// As decisões (nível, ordem, período do dia) ficam no comum.js; aqui só montamos a página.
+// Tela do totem: um cartão por sala com a % de lotação, a sessão de agora e a próxima.
+// Sem botões e sem rolagem: ninguém interage com o totem, ele só se atualiza sozinho.
+// As regras (nível, ordem, horários) ficam no comum.js; aqui só montamos a página.
 
-const INTERVALO = 10000; // busca números novos a cada 10 segundos
+const INTERVALO = 10000;               // busca números novos a cada 10 segundos
+const SEM_CONEXAO_APAGA = 2 * 60000;   // sem conexão por 2 min: apaga os cartões (dados velhos)
+const RECARREGAR_A_CADA = 60 * 60000;  // recarrega a página de hora em hora (pega versões novas do site)
 
-let ambientes = [];     // última resposta do servidor
-let filtroTipo = "";    // "" = todos; ou "sala", "auditorio", "laboratorio"
+const carregadaEm = Date.now();
+let ultimaAtualizacao = null; // Date da última vez que os dados chegaram
 
 
 // ---------- Montagem dos cartões ----------
 
-// "248 / 300" + barra, na cor do nível
-function criarLinhaLotacao(ambiente, nivel) {
-  const linha = el("div", "cartao-lotacao");
-  const contagem = el("span", "contagem", ambiente.ocupacao);
-  contagem.append(el("span", "de-capacidade", ` / ${ambiente.capacidade}`));
-  linha.append(criarBarra(nivel), contagem);
+// "NOW 10:30–12:00" + título (ou "No session now")
+function criarAgora(ambiente) {
+  const bloco = el("div", "cartao-agora");
+  if (ambiente.agora) {
+    bloco.append(
+      el("span", "rotulo-linha", `Now · ${hora(ambiente.agora.inicio)}–${hora(ambiente.agora.fim)}`),
+      el("p", "sessao-titulo", ambiente.agora.titulo)
+    );
+  } else {
+    bloco.append(el("p", "sessao-titulo sem-sessao", "No session now"));
+  }
+  return bloco;
+}
+
+// "NEXT 14:00  Título" (some quando não há próxima sessão)
+function criarProxima(ambiente) {
+  const linha = el("p", "cartao-proxima");
+  const depois = ambiente.depois;
+  if (!depois) {
+    if (!ambiente.agora) linha.append(el("span", "rotulo-linha", "No more sessions"));
+    return linha;
+  }
+  linha.append(el("span", "rotulo-linha", `Next · ${quandoProxima(depois)}`), " ", el("span", "", depois.titulo));
   return linha;
 }
 
-// "Sem sessão agora · próxima às 16:00" (ou em outro dia, ou sem mais sessões)
-function textoSemSessao(ambiente) {
-  const depois = ambiente.depois;
-  if (!depois) return t("sem_sessao_sem_mais");
-  if (depois.hoje) return t("sem_sessao_proxima_as", hora(depois.inicio));
-  return t("sem_sessao_proxima_dia", diaMes(depois.inicio), hora(depois.inicio));
-}
-
-// O cartão inteiro é um link para a página da sala.
 function criarCartao(ambiente) {
   const nivel = nivelDaSala(ambiente);
-  const cartao = el("a", "cartao");
-  cartao.href = `sala/${encodeURIComponent(ambiente.codigo)}`;
+  const cartao = el("article", `cartao nivel-${nivel.chave}`);
 
-  const nomes = el("div");
-  nomes.append(el("span", "tipo", NOMES_TIPO[ambiente.tipo] ?? ambiente.tipo), el("h3", "cartao-nome", ambiente.nome));
-  const topo = el("div", "cartao-topo");
-  topo.append(nomes, criarSeloNivel(nivel));
-  cartao.append(topo);
+  const nomes = el("div", "cartao-nomes");
+  nomes.append(el("span", "tipo", NOMES_TIPO[ambiente.tipo] ?? ambiente.tipo), el("h2", "cartao-nome", ambiente.nome));
 
-  if (ambiente.agora) {
-    const sessao = el("div", "cartao-sessao");
-    sessao.append(
-      el("span", "sessao-titulo", ambiente.agora.titulo),
-      el("span", "sessao-horario", `${hora(ambiente.agora.inicio)} – ${hora(ambiente.agora.fim)}`)
-    );
-    cartao.append(sessao, criarLinhaLotacao(ambiente, nivel));
-  } else {
-    cartao.append(el("p", "cartao-livre", textoSemSessao(ambiente)));
-    // Sem sessão, mas ainda tem gente: o número real importa mais que o rótulo.
-    if (ambiente.ocupacao > 0) cartao.append(criarLinhaLotacao(ambiente, nivel));
-  }
+  const lotacao = el("div", "cartao-lotacao");
+  lotacao.append(el("span", "porcentagem", `${nivel.pct}%`), el("span", "nivel", nivel.rotulo));
+
+  // Barra: o trilho é a capacidade; a parte colorida, quem está lá (no máximo 100%).
+  const barra = el("div", "barra");
+  const cheia = el("div", "barra-cheia");
+  cheia.style.width = `${Math.min(nivel.pct, 100)}%`;
+  barra.append(cheia);
+
+  cartao.append(nomes, lotacao, criarAgora(ambiente), barra, criarProxima(ambiente));
   return cartao;
 }
-
-function desenhar() {
-  const visiveis = ordenarSalas(ambientes).filter((a) => !filtroTipo || a.tipo === filtroTipo);
-  $("cartoes").replaceChildren(...visiveis.map(criarCartao));
-  if (visiveis.length === 0 && ambientes.length > 0) {
-    $("cartoes").append(el("p", "vazio", t("nenhuma_sala_tipo")));
-  }
-  $("cartoes").removeAttribute("aria-busy");
-}
-
-
-// ---------- Resumo do topo ----------
-
-function desenharResumo() {
-  const agora = new Date();
-  $("dia-periodo").textContent = `${rotuloDia(agora)} · ${t(`periodo_${periodoDoDia(agora.getHours())}`)}`;
-
-  // Só troca o total quando ele muda: o leitor de tela anuncia cada troca.
-  const total = ambientes.reduce((soma, a) => soma + a.ocupacao, 0).toLocaleString(LOCALE);
-  if ($("total-pessoas").textContent !== total) $("total-pessoas").textContent = total;
-
-  const ativas = ambientes.filter((a) => a.agora || a.ocupacao > 0).length;
-  $("salas-ativas").textContent = `${t("salas_com_atividade", ativas, ambientes.length)} · `;
-
-  // Fora do horário das sessões: diz qual é a próxima (a que começa primeiro, em qualquer sala)
-  const foraDoHorario = ambientes.length > 0 && !ambientes.some((a) => a.agora);
-  $("fora-horario").hidden = !foraDoHorario;
-  if (foraDoHorario) {
-    const proximas = ambientes.map((a) => a.depois).filter(Boolean).sort((a, b) => a.inicio.localeCompare(b.inicio));
-    $("fora-horario").textContent = proximas.length
-      ? t("nenhuma_sessao_agora_proxima", proximas[0].titulo, quando(proximas[0]))
-      : t("sem_sessao_agora");
-  }
-}
-
-
-// ---------- Filtro por tipo ----------
-
-document.querySelectorAll(".filtros button").forEach((botao) => {
-  botao.addEventListener("click", () => {
-    filtroTipo = botao.dataset.tipo;
-    document.querySelectorAll(".filtros button").forEach((b) => {
-      b.setAttribute("aria-pressed", String(b === botao));
-    });
-    desenhar();
-  });
-});
 
 
 // ---------- Atualização ----------
 
+function mostrarConexao(deuCerto) {
+  if (deuCerto) ultimaAtualizacao = new Date();
+  const horario = ultimaAtualizacao
+    ? ultimaAtualizacao.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })
+    : "--:--";
+  $("selo-texto").textContent = deuCerto ? `LIVE · ${horario}` : `RECONNECTING · ${horario}`;
+  $("selo-ao-vivo").classList.toggle("sem-conexao", !deuCerto);
+  const desatualizado = !ultimaAtualizacao || Date.now() - ultimaAtualizacao > SEM_CONEXAO_APAGA;
+  $("cartoes").classList.toggle("desatualizado", !deuCerto && desatualizado);
+}
+
 async function atualizar() {
+  $("dia").textContent = rotuloDia(new Date());
   try {
     const resposta = await fetch("ambientes");
     if (!resposta.ok) throw new Error();
-    ambientes = await resposta.json();
-    desenharResumo();
-    desenhar();
-    mostrarAtualizado(true);
+    const ambientes = await resposta.json();
+    // Só recarrega com o servidor respondendo: offline, o totem ficaria preso numa página de erro.
+    if (Date.now() - carregadaEm > RECARREGAR_A_CADA) {
+      location.reload();
+      return;
+    }
+    $("cartoes").replaceChildren(...ordenarSalas(ambientes).map(criarCartao));
+    mostrarConexao(true);
   } catch {
-    // Mantém os últimos números na tela e só avisa (selo e linha de apoio).
-    mostrarAtualizado(false);
+    // Mantém os últimos números na tela e só avisa no selo (e apaga os cartões se demorar).
+    mostrarConexao(false);
   }
 }
 
-repetirEnquantoVisivel(atualizar, INTERVALO);
+setInterval(atualizar, INTERVALO);
+atualizar();

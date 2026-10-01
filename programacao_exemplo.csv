@@ -6,9 +6,9 @@ S1,26/09/2026,20:00,21:00,Sessão de teste que começa às 20h,Equipe do site
 A1,20/10/2026,09:00,10:00,Abertura do BRACIS 2026,Organização
 A1,20/10/2026,10:30,12:00,Palestra de abertura,Pessoa Convidada
 A2,20/10/2026,10:30,12:00,Sessão técnica: Aprendizado de Máquina 1,
-A3,20/10/2026,10:30,12:00,Sessão técnica: Processamento de Linguagem Natural,
+S3,20/10/2026,10:30,12:00,Sessão técnica: Processamento de Linguagem Natural,
 S1,20/10/2026,14:00,15:30,Workshop de Visão Computacional,
 S2,20/10/2026,14:00,15:30,Sessão técnica: Robótica,
-L1,20/10/2026,14:00,17:00,Minicurso prático de Python para IA,Pessoa Instrutora
+S4,20/10/2026,14:00,17:00,Minicurso prático de Python para IA,Pessoa Instrutora
 A1,21/10/2026,09:00,10:30,Palestra convidada,Outra Pessoa Convidada
 A2,21/10/2026,10:30,12:00,Sessão técnica: Aprendizado de Máquina 2,

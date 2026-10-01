@@ -32,10 +32,9 @@ def lista_salas():
         programacao.agora_e_depois(conn, datetime(2026, 10, 21, 14, 30))
 
 
-def pagina_sala():
+def tela_voluntario():
     with database.conectar() as conn:
         database.obter_ambiente(conn, "A1")
-        database.movimento_do_dia(conn, "A1", "2026-10-21")
 
 
 for total in [100, 20_000, 80_000]:
@@ -48,4 +47,4 @@ for total in [100, 20_000, 80_000]:
               (base + timedelta(seconds=i * 13)).strftime("%Y-%m-%dT%H:%M:%S-04:00")) for i in range(total)])
     print(f"{total:,} registros no banco:".replace(",", "."))
     medir("lista das salas (/ambientes)", lista_salas)
-    medir("página de uma sala (/detalhes)", pagina_sala, vezes=100)
+    medir("uma sala (/ambientes/A1, voluntário)", tela_voluntario, vezes=100)

@@ -1,10 +1,10 @@
-// Teste de carga das páginas públicas: simula participantes com o site aberto no celular.
-// Uso: node carga.js <participantes> <segundos> [endereço base]
+// Teste de carga da tela pública: simula muitas telas abertas ao mesmo tempo
+// (o totem, e quem abrir o endereço no celular).
+// Uso: node carga.js <telas> <segundos> [endereço base]
 // Só faz leituras (GET): não muda nenhum dado do site.
 const PARTICIPANTES = Number(process.argv[2] || 800);
 const DURACAO = Number(process.argv[3] || 120) * 1000;
 const BASE = process.argv[4] || "https://bracis.ic.ufmt.br/live/";
-const SALAS = ["A1", "A2", "A3", "S1", "S2", "S3", "S4", "S5", "L1"];
 
 const medidas = [];      // { rota, ms, ok, instante }
 let emAndamento = 0;
@@ -24,17 +24,13 @@ async function pedir(rota) {
   medidas.push({ rota: rota.split("/")[0], ms: Date.now() - t0, ok, instante: Date.now() });
 }
 
-// Um participante: como o celular, repete a busca no intervalo da página (com uma variação,
-// para os 800 não pedirem todos no mesmo milissegundo).
-async function participante(n) {
-  await espera(Math.random() * 10000); // as pessoas não abrem o site todas no mesmo segundo
-  const naSala = n % 5 === 0;
-  const naProgramacao = n % 10 === 1;
-  const sala = SALAS[n % SALAS.length];
+// Uma tela: como a página, repete a busca a cada 10 s (com uma variação,
+// para as 800 não pedirem todas no mesmo milissegundo).
+async function participante() {
+  await espera(Math.random() * 10000); // as telas não abrem todas no mesmo segundo
   while (Date.now() - inicio < DURACAO) {
-    if (naProgramacao) { await pedir("programacao-dados"); await espera(30000 * (0.9 + Math.random() * 0.2)); }
-    else if (naSala) { await pedir(`ambientes/${sala}/detalhes`); await espera(15000 * (0.9 + Math.random() * 0.2)); }
-    else { await pedir("ambientes"); await espera(10000 * (0.9 + Math.random() * 0.2)); }
+    await pedir("ambientes");
+    await espera(10000 * (0.9 + Math.random() * 0.2));
   }
 }
 
@@ -51,16 +47,13 @@ const relogio = setInterval(() => {
 }, 10000);
 
 (async () => {
-  console.log(`${PARTICIPANTES} participantes por ${DURACAO / 1000} s contra ${BASE}`);
-  await Promise.all(Array.from({ length: PARTICIPANTES }, (_, n) => participante(n)));
+  console.log(`${PARTICIPANTES} telas por ${DURACAO / 1000} s contra ${BASE}`);
+  await Promise.all(Array.from({ length: PARTICIPANTES }, participante));
   clearInterval(relogio);
   const aquecido = medidas.filter((m) => m.instante - inicio > 15000); // ignora os primeiros 15 s (abertura)
   console.log("\nResumo (depois dos primeiros 15 s):");
-  for (const rota of ["ambientes", "programacao-dados"]) {
-    const t = aquecido.filter((m) => m.rota === rota).map((m) => m.ms).sort((a, b) => a - b);
-    const e = aquecido.filter((m) => m.rota === rota && !m.ok).length;
-    console.log(`  ${rota.padEnd(18)} ${String(t.length).padStart(6)} pedidos | mediana ${perc(t, 0.5)} ms | 95% ${perc(t, 0.95)} ms | 99% ${perc(t, 0.99)} ms | erros ${e}`);
-  }
+  const t = aquecido.map((m) => m.ms).sort((a, b) => a - b);
+  console.log(`  ambientes ${String(t.length).padStart(6)} pedidos | mediana ${perc(t, 0.5)} ms | 95% ${perc(t, 0.95)} ms | 99% ${perc(t, 0.99)} ms`);
   const total = aquecido.length, erros = aquecido.filter((m) => !m.ok).length;
   console.log(`  TOTAL ${total} pedidos, ${(total / ((DURACAO - 15000) / 1000)).toFixed(0)} por segundo, ${erros} erros (${((erros / Math.max(total, 1)) * 100).toFixed(2)}%)`);
 })();

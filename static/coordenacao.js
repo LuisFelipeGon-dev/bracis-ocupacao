@@ -34,7 +34,7 @@ async function api(metodo, rota, dados) {
 
 // Os erros que nós escrevemos vêm como texto. Os de formato (422, do FastAPI) vêm como
 // lista, em inglês: aí dizemos só qual campo foi recusado.
-const NOMES_CAMPOS = { nome: "nome", email: "e-mail", senha: "senha", texto: "lista", quantidade: "quantidade" };
+const NOMES_CAMPOS = { nome: "nome", email: "e-mail", senha: "senha", texto: "lista", quantidade: "quantidade", capacidade: "nova capacidade" };
 function textoDoErro(corpo) {
   if (typeof corpo.detail === "string") return corpo.detail;
   const campo = corpo.detail?.[0]?.loc?.at(-1);
@@ -123,7 +123,8 @@ async function atualizarSituacao() {
         : "nenhum";
       const tr = linhaTabela([
         a.nome,
-        `${a.ocupacao} / ${a.capacidade}`,
+        `${a.ocupacao} (${porcentagem(a)})`,
+        a.capacidade,
         a.entradas,
         a.saidas,
         ultimo,
@@ -136,10 +137,46 @@ async function atualizarSituacao() {
     });
     $("tabela-situacao").replaceChildren(...linhas);
     $("atualizado").textContent = `Atualizado às ${new Date().toLocaleTimeString("pt-BR")}`;
+    preencherSalas(ambientes);
   } catch (erro) {
     mensagem(erro.message, "erro");
   }
 }
+
+// "45%": a mesma conta do totem (comum.js)
+const porcentagem = (a) => `${a.capacidade > 0 ? Math.round((a.ocupacao / a.capacidade) * 100) : 0}%`;
+
+
+// ---------- Capacidade ----------
+
+// Preenche a lista de salas do formulário só uma vez (senão, a cada 10 s, a escolha se perderia).
+function preencherSalas(ambientes) {
+  const lista = $("form-capacidade").codigo;
+  if (lista.options.length > 0) return;
+  for (const a of ambientes) {
+    const opcao = new Option(`${a.nome} (hoje: ${a.capacidade})`, a.codigo);
+    opcao.dataset.nome = a.nome;
+    lista.append(opcao);
+  }
+}
+
+$("form-capacidade").addEventListener("submit", async (evento) => {
+  evento.preventDefault();
+  const form = evento.target;
+  const opcao = form.codigo.selectedOptions[0];
+  const nome = opcao.dataset.nome;
+  try {
+    const { capacidade } = await api("POST", `coordenacao/ambientes/${form.codigo.value}/capacidade`, {
+      capacidade: Number(form.capacidade.value),
+    });
+    opcao.textContent = `${nome} (hoje: ${capacidade})`;
+    form.capacidade.value = "";
+    mensagem(`Capacidade de ${nome} agora é ${capacidade}.`, "ok");
+    atualizarSituacao();
+  } catch (erro) {
+    mensagem(erro.message, "erro");
+  }
+});
 
 setInterval(() => {
   if (!$("tela-painel").hidden && !document.hidden) atualizarSituacao();

@@ -128,25 +128,6 @@ def atualizar(conn) -> dict:
     return ultima_leitura
 
 
-def sessoes_do_ambiente(conn, codigo: str) -> list[dict]:
-    """Toda a programação de um ambiente, em ordem de horário."""
-    linhas = conn.execute(
-        "SELECT titulo, palestrante, inicio, fim FROM sessoes WHERE ambiente_codigo = ? ORDER BY inicio",
-        (codigo,),
-    ).fetchall()
-    return [dict(linha) for linha in linhas]
-
-
-def todas_as_sessoes(conn) -> list[dict]:
-    """Programação de todas as salas (para a tela "Programação"), com o nome e o tipo de cada sala."""
-    linhas = conn.execute(
-        """SELECT s.ambiente_codigo, a.nome AS ambiente_nome, a.tipo, s.titulo, s.palestrante, s.inicio, s.fim
-           FROM sessoes s JOIN ambientes a ON a.codigo = s.ambiente_codigo
-           ORDER BY s.inicio, a.codigo"""
-    ).fetchall()
-    return [dict(linha) for linha in linhas]
-
-
 def agora_e_depois(conn, agora: datetime) -> dict:
     """Para cada ambiente: a sessão que está acontecendo e a próxima.
 

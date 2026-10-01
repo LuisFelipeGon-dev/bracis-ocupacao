@@ -117,6 +117,10 @@ class MudarAtivo(BaseModel):
     ativo: bool
 
 
+class MudarCapacidade(BaseModel):
+    capacidade: int = Field(ge=1, le=5000)
+
+
 def pessoas(n: int) -> str:
     """ "1 pessoa" / "3 pessoas" """
     return "1 pessoa" if n == 1 else f"{n} pessoas"
@@ -207,17 +211,6 @@ def pagina_voluntario():
     return FileResponse("static/voluntario.html")
 
 
-@rotas.get("/sala/{codigo}", include_in_schema=False)
-def pagina_sala(codigo: str):
-    # A página é a mesma para todas as salas; o sala.js lê o código no endereço.
-    return FileResponse("static/sala.html")
-
-
-@rotas.get("/programacao", include_in_schema=False)
-def pagina_programacao():
-    return FileResponse("static/programacao.html")
-
-
 @rotas.get("/coordenacao", include_in_schema=False)
 def pagina_coordenacao():
     return FileResponse("static/coordenacao.html")
@@ -299,23 +292,6 @@ def calcular_ambientes():
     return ambientes
 
 
-@rotas.get("/programacao-dados")
-def programacao_publica():
-    """Tudo o que a tela "Programação" mostra: as sessões de todas as salas e a ocupação atual
-    (para o selo de nível das sessões que estão acontecendo). Só leitura, sem login."""
-    return da_memoria("programacao", calcular_programacao)
-
-
-def calcular_programacao():
-    agora = datetime.now(FUSO_CUIABA)
-    with database.conectar() as conn:
-        return {
-            "horario_servidor": agora.strftime("%Y-%m-%dT%H:%M"),
-            "ambientes": database.listar_ambientes(conn),
-            "sessoes": programacao.todas_as_sessoes(conn),
-        }
-
-
 @rotas.get("/ambientes/{codigo}")
 def obter_ambiente(codigo: str):
     with database.conectar() as conn:
@@ -323,31 +299,6 @@ def obter_ambiente(codigo: str):
     if ambiente is None:
         raise HTTPException(status_code=404, detail="Sala não encontrada.")
     return ambiente
-
-
-@rotas.get("/ambientes/{codigo}/detalhes")
-def detalhes_ambiente(codigo: str):
-    """Tudo o que a página de uma sala mostra. Separado de /ambientes/{codigo}
-    porque aquela rota é consultada o tempo todo pelo celular do voluntário e deve ser leve."""
-    # Sala que não existe dá erro 404 antes de guardar: a memória só tem salas de verdade.
-    return da_memoria(("detalhes", codigo), lambda: calcular_detalhes(codigo))
-
-
-def calcular_detalhes(codigo: str):
-    agora = datetime.now(FUSO_CUIABA)
-    with database.conectar() as conn:
-        ambiente = database.obter_ambiente(conn, codigo)
-        if ambiente is None:
-            raise HTTPException(status_code=404, detail="Sala não encontrada.")
-        sessoes = programacao.agora_e_depois(conn, agora).get(codigo, {})
-        return {
-            **ambiente,
-            "agora": sessoes.get("agora"),
-            "depois": sessoes.get("depois"),
-            "programacao": programacao.sessoes_do_ambiente(conn, codigo),
-            "hoje": database.movimento_do_dia(conn, codigo, agora.strftime("%Y-%m-%d")),
-            "horario_servidor": agora.strftime("%Y-%m-%dT%H:%M"),
-        }
 
 
 # ---------- Contagem (voluntários) ----------
@@ -468,6 +419,19 @@ def situacao(request: Request):
     exigir_coordenacao(request)
     with database.conectar() as conn:
         return database.situacao_ambientes(conn)
+
+
+@rotas.post("/coordenacao/ambientes/{codigo}/capacidade")
+def mudar_capacidade(codigo: str, dados: MudarCapacidade, request: Request):
+    """A capacidade muda conforme o momento do congresso; o totem mostra a % com a nova na hora."""
+    exigir_coordenacao(request)
+    with database.conectar() as conn:
+        cursor = conn.execute(
+            "UPDATE ambientes SET capacidade = ? WHERE codigo = ?", (dados.capacidade, codigo)
+        )
+    if cursor.rowcount == 0:
+        raise HTTPException(status_code=404, detail="Sala não encontrada.")
+    return {"codigo": codigo, "capacidade": dados.capacidade}
 
 
 @rotas.get("/coordenacao/voluntarios")

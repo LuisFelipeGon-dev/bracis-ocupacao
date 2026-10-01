@@ -47,6 +47,7 @@
               <tr>
                 <th>Sala</th>
                 <th>Agora</th>
+                <th>Capacidade</th>
                 <th>Entradas</th>
                 <th>Saídas</th>
                 <th>Último registro</th>
@@ -56,6 +57,17 @@
           </table>
         </div>
         <p><small>Linhas destacadas: mais de 10 minutos sem nenhum registro.</small></p>
+
+        <details>
+          <summary>Mudar capacidade de uma sala</summary>
+          <form id="form-capacidade">
+            <p><small>O totem mostra a lotação em % da capacidade. A mudança aparece nele em até 10 segundos.</small></p>
+            <label>Sala <select name="codigo" required></select></label>
+            <label>Nova capacidade (lugares) <input type="number" name="capacidade" min="1" max="5000" required></label>
+            <button type="submit">Salvar capacidade</button>
+          </form>
+        </details>
+
         <a href="coordenacao/eventos.csv" role="button" class="secondary">Baixar histórico (CSV)</a>
       </section>
 

@@ -14,8 +14,7 @@ from pathlib import Path
 PASTA = Path(__file__).resolve().parent
 
 TESTES = [
-    ["node", PASTA / "unidade" / "teste_publico.js", "pt"],
-    ["node", PASTA / "unidade" / "teste_publico.js", "en"],
+    ["node", PASTA / "unidade" / "teste_publico.js"],
     ["node", PASTA / "unidade" / "teste_toques.js"],
     *[[sys.executable, arquivo] for arquivo in sorted((PASTA / "servidor").glob("teste_*.py"))],
 ]

@@ -6,17 +6,17 @@ from contextlib import contextmanager
 
 ARQUIVO_BANCO = "bracis.db"
 
-# Dados de exemplo até a organização mandar os reais.
+# Os 7 ambientes do evento: 2 auditórios e 5 salas (nomes de exemplo até a organização mandar os reais).
+# A capacidade daqui só vale quando a sala é criada; depois, quem muda é a coordenação no painel
+# (a capacidade muda conforme o momento do congresso).
 AMBIENTES_EXEMPLO = [
     ("A1", "Auditório 1", "auditorio", 200),
     ("A2", "Auditório 2", "auditorio", 150),
-    ("A3", "Auditório 3", "auditorio", 120),
     ("S1", "Sala 1", "sala", 50),
     ("S2", "Sala 2", "sala", 50),
     ("S3", "Sala 3", "sala", 40),
     ("S4", "Sala 4", "sala", 40),
     ("S5", "Sala 5", "sala", 30),
-    ("L1", "Laboratório 1", "laboratorio", 30),
 ]
 
 VOLUNTARIOS_EXEMPLO = [
@@ -82,47 +82,6 @@ def obter_ambiente(conn, codigo):
         SQL_AMBIENTES_COM_OCUPACAO + " WHERE a.codigo = ? GROUP BY a.codigo", (codigo,)
     ).fetchone()
     return dict(linha) if linha else None
-
-
-def movimento_do_dia(conn, codigo, dia):
-    """Entradas, saídas e a ocupação ao longo de um dia (dia = "2026-10-20"), para o gráfico.
-
-    Os horários são guardados como "2026-10-20T09:15:02-04:00"; comparar esses textos
-    com "2026-10-20T00:00" já separa o que é antes e o que é depois do começo do dia.
-    """
-    comeco = f"{dia}T00:00"
-    # Quem já estava na sala antes do dia começar (normalmente 0).
-    ocupacao = conn.execute(
-        """SELECT COALESCE(SUM(CASE tipo WHEN 'entrada' THEN quantidade ELSE -quantidade END), 0)
-           FROM eventos WHERE ambiente_codigo = ? AND desfeito = 0 AND horario < ?""",
-        (codigo, comeco),
-    ).fetchone()[0]
-    eventos = conn.execute(
-        """SELECT horario, tipo, quantidade FROM eventos
-           WHERE ambiente_codigo = ? AND desfeito = 0 AND horario >= ? AND horario < ?
-           ORDER BY id""",
-        (codigo, comeco, f"{dia}T99"),  # "T99" vem depois de qualquer hora do dia
-    ).fetchall()
-
-    inicial = ocupacao
-    entradas = saidas = 0
-    pontos = {}  # minuto ("2026-10-20T09:15") -> ocupação no fim daquele minuto
-    for evento in eventos:
-        if evento["tipo"] == "entrada":
-            entradas += evento["quantidade"]
-            ocupacao += evento["quantidade"]
-        else:
-            saidas += evento["quantidade"]
-            ocupacao -= evento["quantidade"]
-        # Vários registros no mesmo minuto viram um ponto só: o gráfico fica leve.
-        pontos[evento["horario"][:16]] = ocupacao
-
-    return {
-        "inicial": inicial,
-        "entradas": entradas,
-        "saidas": saidas,
-        "pontos": [{"horario": h, "ocupacao": o} for h, o in pontos.items()],
-    }
 
 
 def situacao_ambientes(conn):
@@ -205,17 +164,31 @@ def criar_banco(criar_voluntarios_exemplo: bool):
         if "ativo" not in colunas:
             conn.execute("ALTER TABLE voluntarios ADD COLUMN ativo INTEGER NOT NULL DEFAULT 1")
 
-        # Se o código já existe, atualiza nome, tipo e capacidade (assim, trocar a lista
-        # acima e reiniciar o site já corrige os dados). "excluded" = a linha que tentamos inserir.
+        # Se o código já existe, atualiza nome e tipo (assim, trocar a lista acima e reiniciar
+        # o site já corrige os dados). A capacidade fica como está: ela é mudada pela coordenação.
+        # "excluded" = a linha que tentamos inserir.
         # Os eventos ficam ligados ao código, que não muda, então nada da contagem se perde.
         conn.executemany(
             """INSERT INTO ambientes (codigo, nome, tipo, capacidade) VALUES (?, ?, ?, ?)
                ON CONFLICT (codigo) DO UPDATE SET
                    nome = excluded.nome,
-                   tipo = excluded.tipo,
-                   capacidade = excluded.capacidade""",
+                   tipo = excluded.tipo""",
             AMBIENTES_EXEMPLO,
         )
+
+        # Salas que saíram da lista: apaga, desde que não tenham nenhuma entrada ou saída
+        # registrada (essas ficam, para não perder o histórico; o aviso aparece no log).
+        codigos = [a[0] for a in AMBIENTES_EXEMPLO]
+        marcadores = ", ".join("?" * len(codigos))
+        sobrando = conn.execute(
+            f"SELECT codigo FROM ambientes WHERE codigo NOT IN ({marcadores})", codigos
+        ).fetchall()
+        for (codigo,) in sobrando:
+            if conn.execute("SELECT 1 FROM eventos WHERE ambiente_codigo = ?", (codigo,)).fetchone():
+                print(f"Aviso: a sala {codigo} saiu da lista, mas tem registros; ela foi mantida.")
+                continue
+            conn.execute("DELETE FROM sessoes WHERE ambiente_codigo = ?", (codigo,))
+            conn.execute("DELETE FROM ambientes WHERE codigo = ?", (codigo,))
         if not criar_voluntarios_exemplo:
             return
         for nome, email, pin in VOLUNTARIOS_EXEMPLO:

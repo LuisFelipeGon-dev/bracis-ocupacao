@@ -1,4 +1,4 @@
-"""Testa a memória de 2 s das respostas públicas (lista das salas, página da sala, programação)."""
+"""Testa a memória de 2 s da resposta pública (lista das salas que o totem consulta)."""
 import os
 import sys
 import tempfile
@@ -35,18 +35,12 @@ def ocupacao_publica(sala):
 
 
 confere("começa vazia", ocupacao_publica("A1"), 0)
-main.detalhes_ambiente("A1")      # primeiras visitas: guardam as respostas
-main.programacao_publica()
 entra("A1", 5)
 confere("dentro de 2 s: resposta guardada", ocupacao_publica("A1"), 0)
-confere("página da sala também guardada", main.detalhes_ambiente("A1")["ocupacao"], 0)
-confere("programação também guardada",
-        next(a for a in main.programacao_publica()["ambientes"] if a["codigo"] == "A1")["ocupacao"], 0)
 confere("voluntário vê o número exato na hora (sem memória)", main.obter_ambiente("A1")["ocupacao"], 5)
 relogio[0] += 2.1
 confere("depois de 2 s: recalcula", ocupacao_publica("A1"), 5)
-confere("página da sala depois de 2 s", main.detalhes_ambiente("A1")["ocupacao"], 5)
-confere("cada sala tem a sua memória", main.detalhes_ambiente("A2")["codigo"], "A2")
+confere("7 ambientes no totem", len(main.listar_ambientes()), 7)
 
 print("\nTudo certo." if not falhas else f"\n{falhas} FALHA(S)")
 sys.exit(1 if falhas else 0)

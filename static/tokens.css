@@ -1,4 +1,4 @@
-/* Cores, fontes e tamanhos das páginas públicas.
+/* Cores e fontes da tela do totem (os tamanhos ficam no publico.css).
    As fontes ficam em static/fontes/ (licença OFL), sem depender do Google Fonts. */
 
 @font-face {
@@ -16,20 +16,15 @@
 :root {
   /* Cores base */
   --bg: #F5F3EE;            /* fundo da página */
-  --surface: #FFFFFF;       /* cards */
-  --border: #E4DFD4;        /* borda de cards e divisórias */
-  --border-strong: #DAD4C7; /* borda de botões/chips inativos */
-  --divider: #EFEBE3;       /* linhas internas de listas */
+  --surface: #FFFFFF;       /* cartões e topo */
+  --border: #E4DFD4;        /* borda dos cartões */
   --track: #ECE8E0;         /* fundo das barras de lotação */
-  --segmented-bg: #E9E5DC;  /* fundo do seletor Agora/Programação */
 
   --ink: #15171C;           /* texto principal */
-  --ink-2: #33363D;         /* texto secundário forte */
   --ink-3: #4A4E57;         /* texto de apoio */
   --muted: #5B5F68;         /* rótulos, legendas (contraste >= 4.5:1 no --bg) */
 
-  --accent: #2B3A8C;        /* chip ativo, dia ativo, card "Agora" */
-  --live: #F2744B;          /* ponto "ao vivo" e selo AGORA */
+  --live: #F2744B;          /* ponto "ao vivo" */
 
   /* Níveis de lotação (diferem em claridade, não só em cor) */
   --lvl-low-fill: #7FB8AC;  --lvl-low-text: #1F5A4E;  --lvl-low-bg: #DDEFEA;   /* Tranquila  < 40% */
@@ -39,13 +34,7 @@
   /* Tipografia */
   --font-display: "Bricolage Grotesque", Georgia, serif; /* títulos e números grandes */
   --font-body: "IBM Plex Sans", system-ui, sans-serif;   /* texto corrido */
-  --font-mono: "IBM Plex Mono", ui-monospace, monospace; /* horários, contagens, rótulos em caixa alta */
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace; /* horários e rótulos em caixa alta */
 
-  /* Espaçamento e forma */
-  --page-x: 20px;       /* margem lateral no celular */
-  --gap-card: 10px;     /* entre cards */
-  --pad-card: 16px;
-  --radius-card: 18px;
   --radius-pill: 999px;
-  --touch: 44px;        /* altura mínima de qualquer alvo de toque */
 }
