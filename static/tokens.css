@@ -14,8 +14,7 @@
 :root {
   /* Cores base */
   --bg: #F5F3EE;            /* fundo da página */
-  --surface: #FFFFFF;       /* fundo do topo */
-  --border: #DDD7CB;        /* fios entre as salas e do topo */
+  --border: #DDD7CB;        /* fios entre as salas e acima do rodapé */
   --track: #ECE8E0;         /* fundo das barras de lotação */
 
   --ink: #15171C;           /* texto principal */
