@@ -48,7 +48,7 @@ versões novas do site. Sem conexão por mais de 2 minutos, os cartões ficam ap
 | `static/fontes/` | Fontes do site e as licenças delas (OFL) |
 | `static/comum.js` | Regras do totem (nível de lotação, ordem das salas, horários) |
 | `static/participante.js` | Monta a tela do totem e atualiza a cada 10 s |
-| `static/logo-bracis.webp` | Logo do topo do totem (para trocar, substitua o arquivo e ajuste o `index.html`) |
+| `static/logo-bracis.png` | Logo oficial do media kit (fundo transparente, 1200 × 500), no topo de todas as páginas |
 | `deploy/` | Arquivos do servidor e o passo a passo de instalação (`deploy/INSTALACAO.md`) |
 | `testes/` | Testes automáticos e de carga (ver `testes/README.md`) |
 | `docs/` | Imagens usadas neste README |

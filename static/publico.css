@@ -44,7 +44,7 @@ h1, h2, p { margin: 0; }
   align-items: center;
   justify-content: space-between;
   padding: calc(1.8 * var(--u)) var(--lado);
-  background: var(--surface); /* o logo atual tem fundo branco: assim ele se mistura com o topo */
+  background: var(--surface); /* faixa branca: separa o topo da lista de salas */
   border-bottom: 1px solid var(--border);
 }
 
