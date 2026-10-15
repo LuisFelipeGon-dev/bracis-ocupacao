@@ -13,23 +13,28 @@
 
 :root {
   /* Paleta do site do BRACIS 2026 (bracis.sbc.org.br/2026): azul, verde, amarelo e vermelho */
-  --brand: #0A4273;         /* azul do BRACIS: cor principal (título, nomes das salas, rodapé) */
-  --on-brand: #FFFFFF;      /* texto em cima do azul */
+  --brand: #0A4273;         /* azul do BRACIS: fundo da página */
+  --yellow: #F5C745;        /* amarelo do BRACIS: título "Room Occupancy" e faixa do topo */
+  --green: #32A64F;         /* verde do BRACIS: faixa do topo e rótulo "Next" */
 
-  /* Cores base */
-  --bg: #F0F2F2;            /* fundo da página ("fog" do site) */
-  --border: #D3DAE0;        /* fios entre as salas */
-  --track: #DDE3E8;         /* fundo das barras de lotação */
+  /* Cores base (tela escura: texto claro sobre o azul) */
+  --bg: var(--brand);       /* fundo da página */
+  --bg-2: #07335A;          /* rodapé (azul um pouco mais escuro) */
+  --border: rgba(255, 255, 255, 0.16); /* fios entre as salas */
+  --track: rgba(255, 255, 255, 0.16);  /* fundo das barras de lotação */
 
-  --ink: #0F1E33;           /* texto principal e a % (azul quase preto) */
-  --ink-3: #4A4B66;         /* texto de apoio */
-  --muted: #5C5D7A;         /* rótulos, legendas ("slate" do site; contraste >= 4.5:1 no --bg) */
+  --ink: #FFFFFF;           /* texto principal, nomes das salas e a % */
+  --ink-3: #D3E0EC;         /* texto de apoio (horários, próxima sessão) */
+  --muted: #A9BFD4;         /* rótulos, salas vazias (contraste >= 4.5:1 no azul) */
+  --next: #7BD893;          /* "Next": o verde do BRACIS mais claro, para ler bem no azul */
 
-  /* Níveis de lotação: "fill" é a cor do site (barra); "text" é o tom escuro dela, para o texto
-     ter contraste. Os níveis diferem em claridade, não só em cor. */
-  --lvl-low-fill: #32A64F;  --lvl-low-text: #1E7A38;  --lvl-low-bg: #E2F3E6;   /* Tranquila  < 40% (verde) */
-  --lvl-mid-fill: #F5C745;  --lvl-mid-text: #8A6407;  --lvl-mid-bg: #FDF4D6;   /* Moderada 40–74% (amarelo) */
-  --lvl-high-fill: #F24444; --lvl-high-text: #B01D1D; --lvl-high-bg: #FDE3E3;  /* Lotada   >= 75% (vermelho) */
+  /* O logo é azul: no fundo azul ele aparece em branco (filtro no publico.css) */
+
+  /* Níveis de lotação: "fill" é a cor do site (barra); "text" é um tom mais claro dela,
+     para o texto ter contraste no azul. Os níveis diferem em claridade, não só em cor. */
+  --lvl-low-fill: #32A64F;  --lvl-low-text: #7BD893;  /* Tranquila  < 40% (verde) */
+  --lvl-mid-fill: #F5C745;  --lvl-mid-text: #F5C745;  /* Moderada 40–74% (amarelo) */
+  --lvl-high-fill: #F24444; --lvl-high-text: #FF9494; --lvl-high-bg: rgba(242, 68, 68, 0.1); /* Lotada >= 75% (vermelho) */
 
   /* Tipografia */
   --font-display: "Bricolage Grotesque", Georgia, serif; /* títulos e números grandes */
