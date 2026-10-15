@@ -70,8 +70,11 @@ Escreva o conteúdo abaixo, trocando os valores. Para salvar: Ctrl+O, Enter; par
 ```
 CHAVE_SESSAO=cole-aqui-a-chave-gerada-acima
 SENHA_COORDENACAO=uma-senha-forte-e-diferente-da-de-teste
-URL_PROGRAMACAO=cole-aqui-o-link-do-csv-da-planilha
+URL_PROGRAMACAO="cole-aqui-os-links-csv-das-abas-separados-por-espaco"
 ```
+
+Os 4 links da planilha oficial (um por dia) já estão prontos no `.env.example`: copie a linha
+`URL_PROGRAMACAO="..."` de lá, sem o `#` do começo.
 
 **Não** coloque `CRIAR_VOLUNTARIOS_EXEMPLO` no servidor: os voluntários de verdade são
 cadastrados pelo painel da coordenação. Deixe `COOKIE_SO_HTTPS` para o final do passo 7

@@ -1,10 +1,14 @@
-/* Visual da tela do totem (em pé, sem interação, sem rolagem).
+/* Visual da tela pública (em pé, sem interação, sem rolagem).
    As variáveis (cores, fontes) ficam no tokens.css. O voluntário e a coordenação NÃO usam este arquivo.
 
-   Tamanhos: tudo é medido em --u, que vale 1% da largura de um totem 1080 × 1920 (10,8 px nele).
-   min(1vw, 0.5625vh): se a tela for mais "larga" que 9:16, quem manda é a altura. Assim a página
-   inteira encolhe junto com a tela e sempre cabe nela, sem rolar.
-   O menor texto da tela tem 1,6 --u (17 px no totem): dá para ler a 2 metros. */
+   A mesma página serve para duas telas:
+     - Totem  1080 × 1920 (9:16): uma linha por sala, lotação à direita.
+     - Painel  336 × 1008 (1:3):  bem estreito; cada sala fica empilhada (fim deste arquivo).
+   O navegador escolhe pelo formato da tela (@media no fim), não pelo tamanho em pixels.
+
+   Tamanhos: tudo é medido em --u, que vale 1% da largura da tela (10,8 px no totem, 3,36 px no painel).
+   O min(...) com a altura faz a página encolher se a tela for mais "larga" que o previsto:
+   assim tudo sempre cabe, sem rolar. */
 
 :root {
   --u: min(1vw, 0.5625vh);
@@ -28,7 +32,7 @@ body {
   background: var(--bg);
   color: var(--ink);
   font-family: var(--font-body);
-  font-size: calc(2 * var(--u));
+  font-size: calc(2.2 * var(--u));
   line-height: 1.25;
   font-variant-numeric: tabular-nums; /* horários e % com algarismos da mesma largura */
 }
@@ -36,14 +40,16 @@ body {
 h1, h2, p { margin: 0; }
 
 
-/* ---------- Topo: logo + data, hora e "Live" ---------- */
+/* ---------- Topo: logo à esquerda, "Room Occupancy" à direita ---------- */
 
 .topo {
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: calc(2.4 * var(--u)) var(--lado) calc(0.6 * var(--u));
+  gap: calc(3 * var(--u));
+  padding: calc(2.4 * var(--u)) var(--lado) calc(2 * var(--u));
+  border-bottom: calc(0.6 * var(--u)) solid var(--brand); /* fio azul do BRACIS */
 }
 
 .logo {
@@ -52,67 +58,14 @@ h1, h2, p { margin: 0; }
   width: auto;
 }
 
-.topo-direita {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: calc(0.6 * var(--u));
-}
-
-.relogio {
-  display: flex;
-  align-items: baseline;
-  gap: calc(1.2 * var(--u));
-  font-size: calc(2 * var(--u));
-  color: var(--ink-3);
-}
-
-.hora {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: calc(3.6 * var(--u));
-  line-height: 1;
-  letter-spacing: -0.02em;
-  color: var(--ink);
-}
-
-/* "● Live": sem caixa, só o ponto pulsando e a palavra */
-.estado {
-  display: flex;
-  align-items: center;
-  gap: calc(0.8 * var(--u));
-  font-size: calc(1.8 * var(--u));
-  font-weight: 600;
-  color: var(--ink-3);
-}
-
-.estado .ponto {
-  width: calc(1.1 * var(--u));
-  height: calc(1.1 * var(--u));
-  border-radius: 50%;
-  background: var(--live);
-  animation: pulso 2s ease-in-out infinite;
-}
-
-/* Sem conexão: ponto cinza e parado, texto na cor de alerta */
-.estado.sem-conexao { color: var(--lvl-high-text); }
-.estado.sem-conexao .ponto {
-  background: #9A9DA3;
-  animation: none;
-}
-
-@keyframes pulso {
-  50% { opacity: 0.35; }
-}
-
 .titulo {
-  flex-shrink: 0;
-  padding: calc(2.4 * var(--u)) var(--lado) calc(1.2 * var(--u));
   font-family: var(--font-display);
   font-weight: 800;
-  font-size: calc(4 * var(--u));
-  line-height: 1.1;
+  font-size: calc(5 * var(--u));
+  line-height: 1.05;
   letter-spacing: -0.025em;
+  text-align: right;
+  color: var(--brand);
 }
 
 
@@ -124,7 +77,7 @@ h1, h2, p { margin: 0; }
   min-height: 0;
   display: grid;
   grid-auto-rows: minmax(0, 1fr);
-  padding: 0 calc(1.2 * var(--u));
+  padding: calc(0.8 * var(--u)) calc(1.2 * var(--u));
   transition: opacity 600ms cubic-bezier(0.16, 1, 0.3, 1), filter 600ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -142,7 +95,7 @@ h1, h2, p { margin: 0; }
   grid-template-columns: minmax(0, 1fr) calc(25 * var(--u));
   column-gap: calc(4 * var(--u));
   align-items: center;
-  padding: calc(1.4 * var(--u)) calc(2.4 * var(--u));
+  padding: calc(1.2 * var(--u)) calc(2.4 * var(--u));
   border-top: 1px solid var(--border);
 }
 
@@ -158,9 +111,10 @@ h1, h2, p { margin: 0; }
 .sala-nome {
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: calc(3.6 * var(--u));
+  font-size: calc(4.3 * var(--u));
   line-height: 1.05;
   letter-spacing: -0.02em;
+  color: var(--brand);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -173,7 +127,7 @@ h1, h2, p { margin: 0; }
 }
 
 .horario {
-  font-size: calc(1.9 * var(--u));
+  font-size: calc(2.2 * var(--u));
   font-weight: 600;
   color: var(--ink-3);
 }
@@ -184,7 +138,7 @@ h1, h2, p { margin: 0; }
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  font-size: calc(2.4 * var(--u));
+  font-size: calc(2.8 * var(--u));
   font-weight: 500;
   line-height: 1.2;
   overflow-wrap: anywhere;
@@ -192,7 +146,7 @@ h1, h2, p { margin: 0; }
 }
 
 .sem-sessao {
-  font-size: calc(2.2 * var(--u));
+  font-size: calc(2.6 * var(--u));
   color: var(--muted);
 }
 
@@ -201,13 +155,13 @@ h1, h2, p { margin: 0; }
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: calc(1.9 * var(--u));
+  font-size: calc(2.2 * var(--u));
   color: var(--ink-3);
 }
 
 .sala-proxima .rotulo {
   font-weight: 600;
-  color: var(--ink);
+  color: var(--brand);
 }
 
 .sala-proxima > span + span { margin-left: calc(1 * var(--u)); }
@@ -223,7 +177,7 @@ h1, h2, p { margin: 0; }
 .porcentagem {
   font-family: var(--font-display);
   font-weight: 800;
-  font-size: calc(8 * var(--u));
+  font-size: calc(8.6 * var(--u));
   line-height: 0.95;
   letter-spacing: -0.035em;
 }
@@ -231,7 +185,7 @@ h1, h2, p { margin: 0; }
 /* Barra: trilho + parte colorida */
 .barra {
   width: 100%;
-  height: calc(1.2 * var(--u));
+  height: calc(1.3 * var(--u));
   border-radius: var(--radius-pill);
   background: var(--track);
   overflow: hidden;
@@ -243,7 +197,7 @@ h1, h2, p { margin: 0; }
 }
 
 .nivel {
-  font-size: calc(2 * var(--u));
+  font-size: calc(2.4 * var(--u));
   font-weight: 600;
   white-space: nowrap;
 }
@@ -277,19 +231,98 @@ h1, h2, p { margin: 0; }
 .sala.nivel-cheia + .sala { border-top-color: transparent; }
 
 
-/* ---------- Rodapé ---------- */
+/* ---------- Rodapé: faixa azul do BRACIS ---------- */
 
 .rodape {
   flex-shrink: 0;
-  padding: calc(1.2 * var(--u)) var(--lado) calc(1.8 * var(--u));
-  border-top: 1px solid var(--border);
-  font-size: calc(1.6 * var(--u));
-  color: var(--muted);
+  padding: calc(1.4 * var(--u)) var(--lado) calc(1.6 * var(--u));
+  background: var(--brand);
+  color: var(--on-brand);
+  font-size: calc(1.9 * var(--u));
   text-align: center;
 }
 
 
+/* ---------- Painel 336 × 1008 ----------
+   Vale para telas pelo menos 2 vezes mais altas que largas (o painel é 1:3; o totem, 9:16, não entra).
+   Aqui --u vale 1% de 336 px = 3,36 px, por isso os números abaixo são maiores que os do totem.
+   Cada sala fica empilhada:
+       Room Nobres        36%
+       Plenty of seats
+       ▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬
+       09:00–10:30 Workshop on…
+       Next 10:30 Tutorial…                      */
+
+@media (max-aspect-ratio: 1/2) {
+  :root {
+    --u: min(1vw, 0.3333vh);
+    --lado: calc(4 * var(--u));
+  }
+
+  body { font-size: calc(4 * var(--u)); }
+
+  .topo {
+    gap: calc(2 * var(--u));
+    padding: calc(3 * var(--u)) var(--lado) calc(2.4 * var(--u));
+    border-bottom-width: calc(1 * var(--u));
+  }
+
+  .logo { height: calc(15 * var(--u)); }
+
+  .titulo { font-size: calc(6.6 * var(--u)); }
+
+  .salas { padding: calc(1 * var(--u)) calc(1.5 * var(--u)); }
+
+  /* As duas colunas viram uma grade só: "display: contents" faz os itens de dentro de
+     .sala-info e .sala-lotacao serem posicionados direto na grade da sala. */
+  .sala {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "nome    pct"
+      "nivel   pct"
+      "barra   barra"
+      "agora   agora"
+      "proxima proxima";
+    align-content: center;
+    align-items: end;
+    column-gap: calc(2 * var(--u));
+    row-gap: calc(0.8 * var(--u));
+    padding: calc(1.8 * var(--u)) calc(2.5 * var(--u));
+  }
+
+  .sala-info,
+  .sala-lotacao { display: contents; }
+
+  .sala-nome    { grid-area: nome; font-size: calc(5.9 * var(--u)); }
+  .nivel        { grid-area: nivel; font-size: calc(4.2 * var(--u)); align-self: start; }
+  .porcentagem  { grid-area: pct; font-size: calc(10.5 * var(--u)); align-self: center; }
+  .barra        { grid-area: barra; height: calc(1.8 * var(--u)); margin-top: calc(0.6 * var(--u)); }
+  .sala-agora   { grid-area: agora; }
+  .sala-proxima { grid-area: proxima; font-size: calc(3.9 * var(--u)); }
+
+  /* Horário e título da sessão na mesma linha, no máximo 2 linhas ao todo */
+  .sala-agora:not(.sem-sessao) {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-height: 1.2;
+  }
+  .horario { font-size: calc(3.9 * var(--u)); }
+  .sala-agora .horario { margin-right: calc(1.5 * var(--u)); }
+  .sala-agora .sessao-titulo { display: inline; font-size: calc(4.5 * var(--u)); }
+
+  .sem-sessao { font-size: calc(4.3 * var(--u)); }
+
+  .sala.nivel-cheia { border-radius: calc(2.4 * var(--u)); }
+
+  .rodape {
+    padding: calc(2 * var(--u)) var(--lado) calc(2.4 * var(--u));
+    font-size: calc(3.4 * var(--u));
+  }
+}
+
+
 @media (prefers-reduced-motion: reduce) {
-  .estado .ponto { animation: none; }
   .salas { transition: none; }
 }

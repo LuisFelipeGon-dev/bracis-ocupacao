@@ -10,7 +10,7 @@ function carregar() {
   vm.createContext(ctx);
   // "const" do topo de um script não vira propriedade do contexto: expomos no fim o que o teste usa.
   const codigo = fs.readFileSync(pasta + "comum.js", "utf8") +
-    "\n;globalThis.__f = { nivelDaSala, ordenarSalas, quandoProxima, rotuloDia };";
+    "\n;globalThis.__f = { nivelDaSala, ordenarSalas, quandoProxima };";
   vm.runInContext(codigo, ctx);
   return ctx.__f;
 }
@@ -29,7 +29,7 @@ try {
   console.log("FALHOU ao carregar:", erro.message);
   process.exit(1);
 }
-const { nivelDaSala, ordenarSalas, quandoProxima, rotuloDia } = f;
+const { nivelDaSala, ordenarSalas, quandoProxima } = f;
 
 // nivelDaSala
 confere("vazia sem sessão = livre", nivelDaSala({ ocupacao: 0, capacidade: 100, agora: null }).chave, "livre");
@@ -52,13 +52,12 @@ confere("capacidade menor = % maior", nivelDaSala({ ocupacao: 60, capacidade: 80
 
 // ordenarSalas
 const lista = [{ tipo: "sala", codigo: "S1" }, { tipo: "auditorio", codigo: "A2" }, { tipo: "auditorio", codigo: "A1" }, { tipo: "sala", codigo: "S10" }];
-confere("ordem fixa", ordenarSalas(lista).map((a) => a.codigo).join(), "A1,A2,S1,S10");
+confere("ordem fixa", ordenarSalas(lista).map((a) => a.codigo).join(), "S1,S10,A1,A2");
 confere("não altera a lista original", lista[0].codigo, "S1");
 
-// quandoProxima / rotuloDia
+// quandoProxima
 confere("próxima hoje: só a hora", quandoProxima({ inicio: "2026-10-20T14:00", hoje: true }), "14:00");
 confere("próxima outro dia: dia e hora", quandoProxima({ inicio: "2026-10-21T09:00", hoje: false }), "Wed 21 Oct, 09:00");
-confere("rótulo do dia", rotuloDia(new Date(2026, 9, 20)), "Tue 20 Oct");
 
 console.log(falhas ? `\n${falhas} FALHA(S)` : "\nTudo certo.");
 process.exit(falhas ? 1 : 0);

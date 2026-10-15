@@ -28,7 +28,8 @@ with database.conectar() as conn:
     print("antes: ", database.obter_ambiente(conn, "A1"))
 
 # Simula a lista nova chegando da organização.
-database.AMBIENTES_EXEMPLO[0] = ("A1", "Arena 1", "auditorio", 350)
+posicao_a1 = [a[0] for a in database.AMBIENTES_EXEMPLO].index("A1")
+database.AMBIENTES_EXEMPLO[posicao_a1] = ("A1", "Arena 1", "auditorio", 350)
 database.criar_banco(criar_voluntarios_exemplo=True)
 
 with database.conectar() as conn:

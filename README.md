@@ -55,9 +55,24 @@ versões novas do site. Sem conexão por mais de 2 minutos, os cartões ficam ap
 
 ## Programação (planilha)
 
-A programação vem de uma planilha do Google Sheets publicada como CSV (o link fica em `URL_PROGRAMACAO`
-no `.env`). O site relê a planilha ao ligar, a cada 10 minutos e pelo botão no painel da coordenação.
-Colunas:
+A programação vem da planilha oficial do Google Sheets, lida como CSV. Cada aba (um dia) tem um link,
+e os links ficam em `URL_PROGRAMACAO` no `.env`, separados por espaço (os 4 links prontos estão no
+`.env.example`). O site relê a planilha ao ligar, a cada 10 minutos e pelo botão no painel da coordenação.
+
+A planilha oficial tem uma linha por artigo:
+
+| Date | Event | Location | Start | End | Order | ID | Session | Chair | Title | Authors |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 19/10/2026 | BRACIS | Room 1 | 08:30 | 10:30 | 1 | #24488 | Graph Representation Learning… | | Learning to Order… | … |
+
+O site junta os artigos da mesma sessão (mesmo dia, sala, evento e `Session`) numa sessão só, do
+primeiro início ao último fim, e é o nome da sessão que aparece no totem. Palestras e minicursos
+(linhas sem `ID`) aparecem como "Session: Title", ex.: "Keynote: The Design of Physical Intelligence".
+A coluna `Location` usa os nomes da planilha (Room 1…5, Arena 1 e 2); a correspondência com os
+nomes do totem fica em `NOMES_NA_PLANILHA`, no `database.py`. Linhas com problema aparecem no
+painel da coordenação, com o número da aba e da linha.
+
+Também funciona uma planilha simples, com uma linha por sessão:
 
 | Sala | Data | Inicio | Fim | Titulo | Palestrante |
 |---|---|---|---|---|---|

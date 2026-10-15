@@ -6,18 +6,31 @@ from contextlib import contextmanager
 
 ARQUIVO_BANCO = "bracis.db"
 
-# Os 7 ambientes do evento: 2 auditórios e 5 salas (nomes de exemplo até a organização mandar os reais).
+# Os 7 ambientes do evento: 5 salas e 2 auditórios (nomes reais, em inglês como no totem).
+# O código não muda (a contagem fica ligada a ele); só o nome.
 # A capacidade daqui só vale quando a sala é criada; depois, quem muda é a coordenação no painel
 # (a capacidade muda conforme o momento do congresso).
 AMBIENTES_EXEMPLO = [
-    ("A1", "Auditório 1", "auditorio", 200),
-    ("A2", "Auditório 2", "auditorio", 150),
-    ("S1", "Sala 1", "sala", 50),
-    ("S2", "Sala 2", "sala", 50),
-    ("S3", "Sala 3", "sala", 40),
-    ("S4", "Sala 4", "sala", 40),
-    ("S5", "Sala 5", "sala", 30),
+    ("S1", "Room Nobres", "sala", 50),
+    ("S2", "Room Araguaia", "sala", 50),
+    ("S3", "Room Xingu", "sala", 40),
+    ("S4", "Room Vila Bela", "sala", 40),
+    ("S5", "Room Chapada", "sala", 30),
+    ("A1", "Pantanal Auditorium", "auditorio", 200),
+    ("A2", "Cerrado Auditorium", "auditorio", 150),
 ]
+
+# Como cada ambiente aparece na coluna "Location" da planilha oficial da programação.
+# (Na planilha a sala também pode vir pelo código ou pelo nome de cima.)
+NOMES_NA_PLANILHA = {
+    "S1": "Room 1",
+    "S2": "Room 2",
+    "S3": "Room 3",
+    "S4": "Room 4",
+    "S5": "Room 5",
+    "A1": "Arena 1",
+    "A2": "Arena 2",
+}
 
 VOLUNTARIOS_EXEMPLO = [
     ("Voluntário Exemplo 1", "voluntario1@exemplo.com", "1111"),
@@ -70,8 +83,9 @@ SQL_AMBIENTES_COM_OCUPACAO = """
 
 
 def listar_ambientes(conn):
+    # Salas primeiro, depois auditórios ("tipo = 'auditorio'" vale 0 para salas e 1 para auditórios).
     linhas = conn.execute(
-        SQL_AMBIENTES_COM_OCUPACAO + " GROUP BY a.codigo ORDER BY a.codigo"
+        SQL_AMBIENTES_COM_OCUPACAO + " GROUP BY a.codigo ORDER BY a.tipo = 'auditorio', a.codigo"
     ).fetchall()
     return [dict(linha) for linha in linhas]
 
@@ -98,7 +112,7 @@ def situacao_ambientes(conn):
                 ORDER BY e2.id DESC LIMIT 1) AS ultimo_voluntario
         FROM ambientes a
         LEFT JOIN eventos e ON e.ambiente_codigo = a.codigo AND e.desfeito = 0
-        GROUP BY a.codigo ORDER BY a.codigo
+        GROUP BY a.codigo ORDER BY a.tipo = 'auditorio', a.codigo
     """).fetchall()
     resultado = []
     for linha in linhas:

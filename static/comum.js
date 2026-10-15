@@ -43,9 +43,9 @@ function nivelDaSala(ambiente) {
 
 // ---------- Ordem, datas e horários ----------
 
-// Sempre auditórios, depois salas: cada sala fica sempre no mesmo lugar da tela.
-// Dentro do tipo, pelo código (S2 antes de S10).
-const ORDEM_TIPO = { auditorio: 0, sala: 1, laboratorio: 2 };
+// Sempre salas, depois auditórios (ordem pedida pela organização): cada sala fica sempre
+// no mesmo lugar da tela. Dentro do tipo, pelo código (S2 antes de S10).
+const ORDEM_TIPO = { sala: 0, auditorio: 1, laboratorio: 2 };
 function ordenarSalas(lista) {
   return [...lista].sort((a, b) =>
     (ORDEM_TIPO[a.tipo] ?? 9) - (ORDEM_TIPO[b.tipo] ?? 9) ||
@@ -66,11 +66,4 @@ function diaCurto(horario) {
 // Quando é a próxima sessão: "14:00" se for hoje; "Wed 21 Oct, 09:00" se for outro dia.
 function quandoProxima(sessao) {
   return sessao.hoje ? hora(sessao.inicio) : `${diaCurto(sessao.inicio)}, ${hora(sessao.inicio)}`;
-}
-
-// "Tue 20 Oct" (data do topo da tela)
-function rotuloDia(data) {
-  return data
-    .toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })
-    .replace(",", "");
 }

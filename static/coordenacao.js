@@ -233,7 +233,8 @@ function mostrarProgramacao(dados) {
   $("programacao-erros").replaceChildren(
     ...dados.erros.map((e) =>
       Object.assign(document.createElement("li"), {
-        textContent: `Linha ${e.linha} da planilha ignorada: ${e.motivo}`,
+        // "aba" só vem quando há mais de um link (uma aba por dia, na ordem do URL_PROGRAMACAO)
+        textContent: `${e.aba ? `Aba ${e.aba}, linha` : "Linha"} ${e.linha} da planilha: ${e.motivo}`,
       })
     )
   );

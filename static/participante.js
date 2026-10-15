@@ -9,8 +9,6 @@ const RECARREGAR_A_CADA = 60 * 60000;  // recarrega a página de hora em hora (p
 const carregadaEm = Date.now();
 let ultimaAtualizacao = null; // Date da última vez que os dados chegaram
 
-const horaCurta = (data) => data.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
-
 
 // ---------- Montagem de cada sala ----------
 
@@ -61,20 +59,11 @@ function criarSala(ambiente) {
 }
 
 
-// ---------- Relógio e conexão ----------
+// ---------- Conexão ----------
 
-function mostrarRelogio() {
-  const agora = new Date();
-  $("dia").textContent = rotuloDia(agora);
-  $("hora").textContent = horaCurta(agora);
-}
-
+// Não há aviso escrito na tela: sem conexão por mais de 2 min, as salas ficam apagadas (cinza).
 function mostrarConexao(deuCerto) {
   if (deuCerto) ultimaAtualizacao = new Date();
-  let texto = "Live";
-  if (!deuCerto) texto = ultimaAtualizacao ? `Reconnecting · last update ${horaCurta(ultimaAtualizacao)}` : "Connecting";
-  $("estado-texto").textContent = texto;
-  $("estado").classList.toggle("sem-conexao", !deuCerto);
   const desatualizado = !ultimaAtualizacao || Date.now() - ultimaAtualizacao > SEM_CONEXAO_APAGA;
   $("salas").classList.toggle("desatualizado", !deuCerto && desatualizado);
 }
@@ -95,12 +84,10 @@ async function atualizar() {
     $("salas").replaceChildren(...ordenarSalas(ambientes).map(criarSala));
     mostrarConexao(true);
   } catch {
-    // Mantém os últimos números na tela e só avisa no topo (e apaga as salas se demorar).
+    // Mantém os últimos números na tela (e apaga as salas se demorar).
     mostrarConexao(false);
   }
 }
 
-setInterval(mostrarRelogio, 1000);
 setInterval(atualizar, INTERVALO);
-mostrarRelogio();
 atualizar();

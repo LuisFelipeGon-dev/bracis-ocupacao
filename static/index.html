@@ -5,25 +5,20 @@
   <base href="/live/"> <!-- o site fica em /live: endereços sem "/" no começo são relativos a ele -->
   <link rel="icon" href="static/favicon.ico" sizes="16x16 32x32 48x48">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Room occupancy · BRACIS 2026</title>
-  <!-- Tela do totem (em pé, sem interação). ?v=7: muda a cada atualização, para o navegador
-       não misturar arquivo novo com antigo guardado -->
+  <title>Room Occupancy · BRACIS 2026</title>
+  <!-- Tela do totem (em pé, sem interação). Feita para duas telas: totem 1080 × 1920 e
+       painel 336 × 1008 (o publico.css escolhe o layout pelo formato da tela).
+       ?v=8: muda a cada atualização, para o navegador não misturar arquivo novo com antigo guardado -->
   <link rel="preload" href="static/fontes/bricolage-grotesque.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="static/tokens.css?v=7">
-  <link rel="stylesheet" href="static/publico.css?v=7">
+  <link rel="stylesheet" href="static/tokens.css?v=8">
+  <link rel="stylesheet" href="static/publico.css?v=8">
 </head>
 <body>
   <header class="topo">
     <!-- Para trocar o logo: substitua o arquivo e ajuste o nome/largura/altura aqui -->
     <img class="logo" src="static/logo-bracis.png" alt="BRACIS 2026" width="1200" height="500">
-    <div class="topo-direita">
-      <p class="relogio"><span id="dia"></span> <span id="hora" class="hora">--:--</span></p>
-      <!-- "● Live" ou, sem conexão, "● Reconnecting · last update 09:32" -->
-      <p id="estado" class="estado"><span class="ponto" aria-hidden="true"></span><span id="estado-texto">Live</span></p>
-    </div>
+    <h1 class="titulo">Room Occupancy</h1>
   </header>
-
-  <h1 class="titulo">Room occupancy</h1>
 
   <!-- As salas são criadas pelo participante.js -->
   <main id="salas" class="salas"></main>
@@ -32,7 +27,7 @@
     Counted live by volunteers at each door · % of each room's current capacity
   </footer>
 
-  <script src="static/comum.js?v=7"></script>
-  <script src="static/participante.js?v=7"></script>
+  <script src="static/comum.js?v=8"></script>
+  <script src="static/participante.js?v=8"></script>
 </body>
 </html>
