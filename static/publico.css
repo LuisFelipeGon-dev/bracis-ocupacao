@@ -185,6 +185,12 @@ h1, h2, p { margin: 0; }
   letter-spacing: -0.035em;
 }
 
+/* O "+" do "100%+" (gente em pé), menor e no alto */
+.porcentagem .mais {
+  font-size: 0.55em;
+  vertical-align: super;
+}
+
 /* Barra: trilho + parte colorida */
 .barra {
   width: 100%;
@@ -209,7 +215,9 @@ h1, h2, p { margin: 0; }
 /* ---------- Cores por nível (o texto sempre acompanha a cor) ---------- */
 
 .nivel-livre .porcentagem,
-.nivel-livre .nivel { color: var(--muted); }
+.nivel-livre .nivel,
+.nivel-sem .porcentagem,
+.nivel-sem .nivel { color: var(--muted); }
 
 .nivel-livre .barra-cheia,
 .nivel-tranquila .barra-cheia { background: var(--lvl-low-fill); }

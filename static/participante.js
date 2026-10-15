@@ -45,9 +45,12 @@ function criarLotacao(nivel) {
   // Barra: o trilho é a capacidade; a parte colorida, quem está lá (no máximo 100%).
   const barra = el("div", "barra");
   const cheia = el("div", "barra-cheia");
-  cheia.style.width = `${Math.min(nivel.pct, 100)}%`;
+  cheia.style.width = `${Math.min(nivel.pct ?? 0, 100)}%`; // sem estimativa: barra vazia
   barra.append(cheia);
-  lotacao.append(el("span", "porcentagem", `${nivel.pct}%`), barra, el("span", "nivel", nivel.rotulo));
+  // "100%+" (gente em pé): o "+" vai menor, para o número caber ao lado do nome no painel estreito
+  const porcentagem = el("span", "porcentagem", nivel.texto.replace("+", ""));
+  if (nivel.texto.endsWith("+")) porcentagem.append(el("span", "mais", "+"));
+  lotacao.append(porcentagem, barra, el("span", "nivel", nivel.rotulo));
   return lotacao;
 }
 

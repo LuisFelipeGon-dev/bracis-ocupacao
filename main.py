@@ -8,7 +8,6 @@ import sqlite3
 import time
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
-from typing import Literal
 
 from dotenv import load_dotenv
 from fastapi import APIRouter, FastAPI, HTTPException, Request
@@ -18,8 +17,8 @@ from pydantic import BaseModel, Field
 from starlette.middleware.sessions import SessionMiddleware
 
 import database
+import estimativas
 import programacao
-import relatorio
 
 load_dotenv()  # lê as configurações do arquivo .env, se existir
 
@@ -89,15 +88,10 @@ class DadosLogin(BaseModel):
     pin: str
 
 
-class NovoEvento(BaseModel):
+class NovaEstimativa(BaseModel):
     ambiente_codigo: str
-    tipo: Literal["entrada", "saida"]
-    quantidade: int = Field(default=1, ge=1, le=500)
-
-
-class PedidoDesfazer(BaseModel):
-    ambiente_codigo: str
-    evento_id: int  # o registro que o voluntário viu na confirmação e aceitou desfazer
+    # 0, 10, 20 ... 100, ou 110 = lotada, com gente em pé (os botões da tela do voluntário)
+    porcentagem: int = Field(ge=0, le=estimativas.GENTE_EM_PE, multiple_of=10)
 
 
 class LoginCoordenacao(BaseModel):
@@ -115,15 +109,6 @@ class ImportarVoluntarios(BaseModel):
 
 class MudarAtivo(BaseModel):
     ativo: bool
-
-
-class MudarCapacidade(BaseModel):
-    capacidade: int = Field(ge=1, le=5000)
-
-
-def pessoas(n: int) -> str:
-    """ "1 pessoa" / "3 pessoas" """
-    return "1 pessoa" if n == 1 else f"{n} pessoas"
 
 
 # ---------- Bloqueio depois de muitas tentativas erradas (login dos voluntários) ----------
@@ -254,13 +239,11 @@ def voluntario_atual(request: Request):
     return dict(voluntario)
 
 
-# ---------- Ambientes e ocupação (público) ----------
+# ---------- Ambientes e lotação (público) ----------
 
-# Memória curta das respostas públicas. A lista das salas soma todas as entradas e saídas do banco;
-# no fim do evento (dezenas de milhares de registros) isso leva dezenas de milissegundos, e com
-# centenas de celulares pedindo a cada 10 s o servidor não daria conta (medido em 27/09).
-# Então cada resposta é calculada no máximo uma vez a cada 2 segundos e entregue igual para todos.
-# A tela do voluntário (/ambientes/{codigo}) NÃO usa a memória: ele vê o número exato na hora.
+# Memória curta das respostas públicas. Com centenas de telas pedindo a lista a cada 10 s,
+# cada resposta é calculada no máximo uma vez a cada 2 segundos e entregue igual para todos.
+# A tela do voluntário (/ambientes/{codigo}) NÃO usa a memória: ele vê a estimativa na hora.
 MEMORIA_SEGUNDOS = 2
 _memoria = {}  # chave -> (quando foi calculada, resposta)
 
@@ -281,101 +264,52 @@ def listar_ambientes():
     return da_memoria("ambientes", calcular_ambientes)
 
 
-def calcular_ambientes():
+def calcular_ambientes(codigo: str | None = None) -> list[dict]:
+    """Cada sala com a sessão de agora, a próxima e a estimativa que vale agora (ou None)."""
+    agora = datetime.now(FUSO_CUIABA)
     with database.conectar() as conn:
         ambientes = database.listar_ambientes(conn)
-        sessoes = programacao.agora_e_depois(conn, datetime.now(FUSO_CUIABA))
+        sessoes = programacao.agora_e_depois(conn, agora)
+        atuais = estimativas.estimativas_atuais(conn, agora)
+    if codigo is not None:
+        ambientes = [a for a in ambientes if a["codigo"] == codigo]
     for ambiente in ambientes:
         da_sala = sessoes.get(ambiente["codigo"], {})
         ambiente["agora"] = da_sala.get("agora")
         ambiente["depois"] = da_sala.get("depois")
+        ambiente["estimativa"] = atuais.get(ambiente["codigo"])
     return ambientes
 
 
 @rotas.get("/ambientes/{codigo}")
 def obter_ambiente(codigo: str):
-    with database.conectar() as conn:
-        ambiente = database.obter_ambiente(conn, codigo)
-    if ambiente is None:
+    encontrados = calcular_ambientes(codigo)
+    if not encontrados:
         raise HTTPException(status_code=404, detail="Sala não encontrada.")
-    return ambiente
+    return encontrados[0]
 
 
-# ---------- Contagem (voluntários) ----------
+# ---------- Estimativa (voluntários) ----------
 
-@rotas.post("/eventos")
-def registrar_evento(evento: NovoEvento, request: Request):
+@rotas.post("/estimativas")
+def registrar_estimativa(dados: NovaEstimativa, request: Request):
+    """O voluntário toca num botão (ex.: 60%): guarda e devolve a sala já com a estimativa nova."""
     voluntario_id = exigir_login(request)
     with database.conectar() as conn:
-        # Trava o banco para escrita até o fim deste bloco: assim dois registros
-        # ao mesmo tempo não conferem a ocupação antiga e passam os dois.
-        conn.execute("BEGIN IMMEDIATE")
-        ambiente = database.obter_ambiente(conn, evento.ambiente_codigo)
-        if ambiente is None:
+        if database.obter_ambiente(conn, dados.ambiente_codigo) is None:
             raise HTTPException(status_code=404, detail="Sala não encontrada.")
-        if evento.tipo == "saida" and evento.quantidade > ambiente["ocupacao"]:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Só há {pessoas(ambiente['ocupacao'])} na sala.",
-            )
         conn.execute(
-            """INSERT INTO eventos (ambiente_codigo, tipo, quantidade, horario, voluntario_id)
-               VALUES (?, ?, ?, ?, ?)""",
+            """INSERT INTO estimativas (ambiente_codigo, porcentagem, horario, voluntario_id)
+               VALUES (?, ?, ?, ?)""",
             (
-                evento.ambiente_codigo,
-                evento.tipo,
-                evento.quantidade,
+                dados.ambiente_codigo,
+                dados.porcentagem,
                 datetime.now(FUSO_CUIABA).isoformat(timespec="seconds"),
                 voluntario_id,
             ),
         )
-        return database.obter_ambiente(conn, evento.ambiente_codigo)
-
-
-# Cada voluntário só desfaz os próprios registros: se uma sala tiver duas portas,
-# quem está numa não desfaz sem querer o toque de quem está na outra.
-SQL_ULTIMO_DO_VOLUNTARIO = """
-    SELECT id, tipo, quantidade, horario FROM eventos
-    WHERE ambiente_codigo = ? AND voluntario_id = ? AND desfeito = 0
-    ORDER BY id DESC LIMIT 1
-"""
-
-
-@rotas.get("/eventos/ultimo")
-def ultimo_registro(ambiente_codigo: str, request: Request):
-    """O último registro deste voluntário nesta sala (para a pergunta do "Desfazer")."""
-    voluntario_id = exigir_login(request)
-    with database.conectar() as conn:
-        ultimo = conn.execute(SQL_ULTIMO_DO_VOLUNTARIO, (ambiente_codigo, voluntario_id)).fetchone()
-    if ultimo is None:
-        raise HTTPException(status_code=404, detail="Você ainda não tem registro para desfazer nesta sala.")
-    return dict(ultimo)
-
-
-@rotas.post("/eventos/desfazer")
-def desfazer_ultimo(pedido: PedidoDesfazer, request: Request):
-    voluntario_id = exigir_login(request)
-    with database.conectar() as conn:
-        conn.execute("BEGIN IMMEDIATE")
-        ultimo = conn.execute(SQL_ULTIMO_DO_VOLUNTARIO, (pedido.ambiente_codigo, voluntario_id)).fetchone()
-        # Confere se ainda é o mesmo registro que apareceu na pergunta.
-        if ultimo is None or ultimo["id"] != pedido.evento_id:
-            raise HTTPException(
-                status_code=409,
-                detail="Esse registro já foi desfeito ou mudou. Toque em Desfazer de novo.",
-            )
-        # Desfazer uma entrada tira gente da sala: não pode ficar negativo.
-        ambiente = database.obter_ambiente(conn, pedido.ambiente_codigo)
-        if ultimo["tipo"] == "entrada" and ultimo["quantidade"] > ambiente["ocupacao"]:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Não dá para desfazer: só há {pessoas(ambiente['ocupacao'])} na sala agora.",
-            )
-        conn.execute("UPDATE eventos SET desfeito = 1 WHERE id = ?", (ultimo["id"],))
-        return {
-            "desfeito": dict(ultimo),
-            "ambiente": database.obter_ambiente(conn, pedido.ambiente_codigo),
-        }
+    _memoria.clear()  # o totem vê a estimativa nova no próximo pedido, sem esperar os 2 s
+    return obter_ambiente(dados.ambiente_codigo)
 
 
 # ---------- Painel da coordenação ----------
@@ -416,22 +350,21 @@ def coordenacao_logada(request: Request):
 
 @rotas.get("/coordenacao/situacao")
 def situacao(request: Request):
+    """Cada sala com a estimativa que vale agora e a última informada (mesmo que já tenha "zerado")."""
     exigir_coordenacao(request)
+    ambientes = calcular_ambientes()
     with database.conectar() as conn:
-        return database.situacao_ambientes(conn)
-
-
-@rotas.post("/coordenacao/ambientes/{codigo}/capacidade")
-def mudar_capacidade(codigo: str, dados: MudarCapacidade, request: Request):
-    """A capacidade muda conforme o momento do congresso; o totem mostra a % com a nova na hora."""
-    exigir_coordenacao(request)
-    with database.conectar() as conn:
-        cursor = conn.execute(
-            "UPDATE ambientes SET capacidade = ? WHERE codigo = ?", (dados.capacidade, codigo)
-        )
-    if cursor.rowcount == 0:
-        raise HTTPException(status_code=404, detail="Sala não encontrada.")
-    return {"codigo": codigo, "capacidade": dados.capacidade}
+        ultimas = {
+            linha["ambiente_codigo"]: dict(linha)
+            for linha in conn.execute("""
+                SELECT e.ambiente_codigo, e.porcentagem, e.horario, v.nome AS voluntario
+                FROM estimativas e JOIN voluntarios v ON v.id = e.voluntario_id
+                WHERE e.id IN (SELECT MAX(id) FROM estimativas GROUP BY ambiente_codigo)
+            """)
+        }
+    for ambiente in ambientes:
+        ambiente["ultima"] = ultimas.get(ambiente["codigo"])
+    return ambientes
 
 
 @rotas.get("/coordenacao/voluntarios")
@@ -559,23 +492,30 @@ def resposta_csv(nome_arquivo: str, cabecalho: list, linhas: list) -> Response:
     )
 
 
-@rotas.get("/coordenacao/eventos.csv")
-def exportar_eventos(request: Request):
-    """Todo o histórico de entradas e saídas, para abrir no Excel."""
+def texto_porcentagem(porcentagem: int | None) -> str:
+    """60 -> "60%"; 110 -> "100%+ (gente em pé)"; None -> "" """
+    if porcentagem is None:
+        return ""
+    return "100%+ (gente em pé)" if porcentagem == estimativas.GENTE_EM_PE else f"{porcentagem}%"
+
+
+@rotas.get("/coordenacao/estimativas.csv")
+def exportar_estimativas(request: Request):
+    """Todas as estimativas informadas, para abrir no Excel."""
     exigir_coordenacao(request)
     with database.conectar() as conn:
         linhas = conn.execute("""
-            SELECT e.id, a.nome AS ambiente, e.tipo, e.quantidade, e.horario,
-                   v.nome AS voluntario, e.desfeito
-            FROM eventos e
+            SELECT e.id, a.nome AS ambiente, e.porcentagem, e.horario, v.nome AS voluntario
+            FROM estimativas e
             JOIN ambientes a ON a.codigo = e.ambiente_codigo
             JOIN voluntarios v ON v.id = e.voluntario_id
             ORDER BY e.id
         """).fetchall()
     return resposta_csv(
-        "eventos-bracis.csv",
-        ["id", "ambiente", "tipo", "quantidade", "horario", "voluntario", "desfeito"],
-        [[*linha[:6], "sim" if linha["desfeito"] else "não"] for linha in linhas],
+        "estimativas-bracis.csv",
+        ["id", "ambiente", "estimativa", "horario", "voluntario"],
+        [[linha["id"], linha["ambiente"], texto_porcentagem(linha["porcentagem"]), linha["horario"], linha["voluntario"]]
+         for linha in linhas],
     )
 
 
@@ -585,27 +525,23 @@ def exportar_eventos(request: Request):
 def ver_relatorio(request: Request):
     exigir_coordenacao(request)
     with database.conectar() as conn:
-        return relatorio.gerar(conn, datetime.now(FUSO_CUIABA))
+        return estimativas.relatorio(conn)
 
 
 @rotas.get("/coordenacao/relatorio.csv")
 def exportar_relatorio(request: Request):
     exigir_coordenacao(request)
     with database.conectar() as conn:
-        dados = relatorio.gerar(conn, datetime.now(FUSO_CUIABA))
+        sessoes = estimativas.relatorio(conn)
     linhas = [
         [s["inicio"][:10], s["inicio"][11:16], s["fim"][11:16], s["ambiente"], s["titulo"],
-         s["palestrante"] or "", s["entradas"], s["saidas"], "" if s["pico"] is None else s["pico"],
-         s["capacidade"]]
-        for s in dados["sessoes"]
+         s["palestrante"] or "", s["estimativas"], texto_porcentagem(s["maior"]), texto_porcentagem(s["media"])]
+        for s in sessoes
     ]
-    for fora in dados["fora_da_programacao"]:
-        linhas.append(["", "", "", fora["ambiente"], "(fora da programação)", "",
-                       fora["entradas"], fora["saidas"], "", ""])
     return resposta_csv(
         "relatorio-sessoes-bracis.csv",
         ["dia", "inicio", "fim", "ambiente", "sessao", "palestrante",
-         "entradas", "saidas", "pico_de_publico", "capacidade"],
+         "estimativas_informadas", "maior_estimativa", "media_das_estimativas"],
         linhas,
     )
 

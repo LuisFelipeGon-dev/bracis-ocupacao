@@ -7,17 +7,15 @@ from contextlib import contextmanager
 ARQUIVO_BANCO = "bracis.db"
 
 # Os 7 ambientes do evento: 5 salas e 2 auditórios (nomes reais, em inglês como no totem).
-# O código não muda (a contagem fica ligada a ele); só o nome.
-# A capacidade daqui só vale quando a sala é criada; depois, quem muda é a coordenação no painel
-# (a capacidade muda conforme o momento do congresso).
+# O código não muda (as estimativas ficam ligadas a ele); só o nome.
 AMBIENTES_EXEMPLO = [
-    ("S1", "Room Nobres", "sala", 50),
-    ("S2", "Room Araguaia", "sala", 50),
-    ("S3", "Room Xingu", "sala", 40),
-    ("S4", "Room Vila Bela", "sala", 40),
-    ("S5", "Room Chapada", "sala", 30),
-    ("A1", "Pantanal Auditorium", "auditorio", 200),
-    ("A2", "Cerrado Auditorium", "auditorio", 150),
+    ("S1", "Room Nobres", "sala"),
+    ("S2", "Room Araguaia", "sala"),
+    ("S3", "Room Xingu", "sala"),
+    ("S4", "Room Vila Bela", "sala"),
+    ("S5", "Room Chapada", "sala"),
+    ("A1", "Pantanal Auditorium", "auditorio"),
+    ("A2", "Cerrado Auditorium", "auditorio"),
 ]
 
 # Como cada ambiente aparece na coluna "Location" da planilha oficial da programação.
@@ -71,55 +69,18 @@ def gerar_pin() -> str:
     return f"{secrets.randbelow(1_000_000):06d}"
 
 
-# Ocupação = soma das entradas − soma das saídas, ignorando o que foi desfeito.
-# O LEFT JOIN faz aparecer também os ambientes que ainda não têm nenhum evento (ocupação 0).
-SQL_AMBIENTES_COM_OCUPACAO = """
-    SELECT a.codigo, a.nome, a.tipo, a.capacidade,
-           COALESCE(SUM(CASE e.tipo WHEN 'entrada' THEN e.quantidade
-                                    ELSE -e.quantidade END), 0) AS ocupacao
-    FROM ambientes a
-    LEFT JOIN eventos e ON e.ambiente_codigo = a.codigo AND e.desfeito = 0
-"""
-
-
 def listar_ambientes(conn):
     # Salas primeiro, depois auditórios ("tipo = 'auditorio'" vale 0 para salas e 1 para auditórios).
     linhas = conn.execute(
-        SQL_AMBIENTES_COM_OCUPACAO + " GROUP BY a.codigo ORDER BY a.tipo = 'auditorio', a.codigo"
+        "SELECT codigo, nome, tipo FROM ambientes ORDER BY tipo = 'auditorio', codigo"
     ).fetchall()
     return [dict(linha) for linha in linhas]
 
 
 def obter_ambiente(conn, codigo):
-    """Devolve o ambiente com a ocupação atual, ou None se o código não existir."""
-    linha = conn.execute(
-        SQL_AMBIENTES_COM_OCUPACAO + " WHERE a.codigo = ? GROUP BY a.codigo", (codigo,)
-    ).fetchone()
+    """Devolve o ambiente, ou None se o código não existir."""
+    linha = conn.execute("SELECT codigo, nome, tipo FROM ambientes WHERE codigo = ?", (codigo,)).fetchone()
     return dict(linha) if linha else None
-
-
-def situacao_ambientes(conn):
-    """Para o painel da coordenação: totais de cada ambiente e o último registro."""
-    linhas = conn.execute("""
-        SELECT a.codigo, a.nome, a.capacidade,
-               COALESCE(SUM(CASE e.tipo WHEN 'entrada' THEN e.quantidade END), 0) AS entradas,
-               COALESCE(SUM(CASE e.tipo WHEN 'saida' THEN e.quantidade END), 0) AS saidas,
-               MAX(e.horario) AS ultimo_registro,
-               -- Nome de quem fez o último registro (que não foi desfeito) nesta sala.
-               (SELECT v.nome FROM eventos e2
-                JOIN voluntarios v ON v.id = e2.voluntario_id
-                WHERE e2.ambiente_codigo = a.codigo AND e2.desfeito = 0
-                ORDER BY e2.id DESC LIMIT 1) AS ultimo_voluntario
-        FROM ambientes a
-        LEFT JOIN eventos e ON e.ambiente_codigo = a.codigo AND e.desfeito = 0
-        GROUP BY a.codigo ORDER BY a.tipo = 'auditorio', a.codigo
-    """).fetchall()
-    resultado = []
-    for linha in linhas:
-        ambiente = dict(linha)
-        ambiente["ocupacao"] = ambiente["entradas"] - ambiente["saidas"]
-        resultado.append(ambiente)
-    return resultado
 
 
 def criar_banco(criar_voluntarios_exemplo: bool):
@@ -133,11 +94,13 @@ def criar_banco(criar_voluntarios_exemplo: bool):
         conn.execute("PRAGMA journal_mode = WAL")
 
         conn.executescript("""
+            -- "capacidade" não é mais usada (desde 15/10 o voluntário informa a lotação em %),
+            -- mas continua na tabela para não precisar refazer o banco que já está no servidor.
             CREATE TABLE IF NOT EXISTS ambientes (
                 codigo     TEXT PRIMARY KEY,
                 nome       TEXT NOT NULL,
                 tipo       TEXT NOT NULL CHECK (tipo IN ('sala', 'auditorio', 'laboratorio')),
-                capacidade INTEGER NOT NULL
+                capacidade INTEGER NOT NULL DEFAULT 0
             );
 
             CREATE TABLE IF NOT EXISTS voluntarios (
@@ -148,6 +111,8 @@ def criar_banco(criar_voluntarios_exemplo: bool):
                 ativo    INTEGER NOT NULL DEFAULT 1
             );
 
+            -- Contagem exata de entradas e saídas, usada até 15/10. Não é mais usada,
+            -- mas fica no banco com o histórico dos testes.
             CREATE TABLE IF NOT EXISTS eventos (
                 id              INTEGER PRIMARY KEY AUTOINCREMENT,
                 ambiente_codigo TEXT NOT NULL REFERENCES ambientes (codigo),
@@ -158,9 +123,20 @@ def criar_banco(criar_voluntarios_exemplo: bool):
                 desfeito        INTEGER NOT NULL DEFAULT 0
             );
 
-            -- Índice: deixa rápido achar os eventos de uma sala.
-            CREATE INDEX IF NOT EXISTS idx_eventos_ambiente
-                ON eventos (ambiente_codigo, desfeito);
+            -- Cada estimativa que um voluntário informa: "a sala está uns 60% cheia".
+            -- porcentagem: 0, 10, 20 ... 100, ou 110 = lotada, com gente em pé.
+            -- Guardamos todas (não só a última) para o relatório de cada sessão.
+            CREATE TABLE IF NOT EXISTS estimativas (
+                id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                ambiente_codigo TEXT NOT NULL REFERENCES ambientes (codigo),
+                porcentagem     INTEGER NOT NULL CHECK (porcentagem BETWEEN 0 AND 110),
+                horario         TEXT NOT NULL,
+                voluntario_id   INTEGER NOT NULL REFERENCES voluntarios (id)
+            );
+
+            -- Índice: deixa rápido achar a última estimativa de uma sala.
+            CREATE INDEX IF NOT EXISTS idx_estimativas_ambiente
+                ON estimativas (ambiente_codigo, id);
 
             CREATE TABLE IF NOT EXISTS sessoes (
                 id              INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -179,26 +155,30 @@ def criar_banco(criar_voluntarios_exemplo: bool):
             conn.execute("ALTER TABLE voluntarios ADD COLUMN ativo INTEGER NOT NULL DEFAULT 1")
 
         # Se o código já existe, atualiza nome e tipo (assim, trocar a lista acima e reiniciar
-        # o site já corrige os dados). A capacidade fica como está: ela é mudada pela coordenação.
-        # "excluded" = a linha que tentamos inserir.
-        # Os eventos ficam ligados ao código, que não muda, então nada da contagem se perde.
+        # o site já corrige os dados). "excluded" = a linha que tentamos inserir.
+        # As estimativas ficam ligadas ao código, que não muda, então nada se perde.
         conn.executemany(
-            """INSERT INTO ambientes (codigo, nome, tipo, capacidade) VALUES (?, ?, ?, ?)
+            """INSERT INTO ambientes (codigo, nome, tipo, capacidade) VALUES (?, ?, ?, 0)
                ON CONFLICT (codigo) DO UPDATE SET
                    nome = excluded.nome,
                    tipo = excluded.tipo""",
             AMBIENTES_EXEMPLO,
         )
 
-        # Salas que saíram da lista: apaga, desde que não tenham nenhuma entrada ou saída
-        # registrada (essas ficam, para não perder o histórico; o aviso aparece no log).
+        # Salas que saíram da lista: apaga, desde que não tenham nenhum registro
+        # (essas ficam, para não perder o histórico; o aviso aparece no log).
         codigos = [a[0] for a in AMBIENTES_EXEMPLO]
         marcadores = ", ".join("?" * len(codigos))
         sobrando = conn.execute(
             f"SELECT codigo FROM ambientes WHERE codigo NOT IN ({marcadores})", codigos
         ).fetchall()
         for (codigo,) in sobrando:
-            if conn.execute("SELECT 1 FROM eventos WHERE ambiente_codigo = ?", (codigo,)).fetchone():
+            tem_registros = conn.execute(
+                """SELECT 1 FROM eventos WHERE ambiente_codigo = ?
+                   UNION ALL SELECT 1 FROM estimativas WHERE ambiente_codigo = ?""",
+                (codigo, codigo),
+            ).fetchone()
+            if tem_registros:
                 print(f"Aviso: a sala {codigo} saiu da lista, mas tem registros; ela foi mantida.")
                 continue
             conn.execute("DELETE FROM sessoes WHERE ambiente_codigo = ?", (codigo,))

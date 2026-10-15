@@ -31,24 +31,23 @@ try {
 }
 const { nivelDaSala, ordenarSalas, quandoProxima } = f;
 
-// nivelDaSala
-confere("vazia sem sessão = livre", nivelDaSala({ ocupacao: 0, capacidade: 100, agora: null }).chave, "livre");
-confere("sem sessão com gente = pela %", nivelDaSala({ ocupacao: 5, capacidade: 100, agora: null }).chave, "tranquila");
-confere("39% = tranquila", nivelDaSala({ ocupacao: 39, capacidade: 100, agora: {} }).chave, "tranquila");
-confere("40% = moderada", nivelDaSala({ ocupacao: 40, capacidade: 100, agora: {} }).chave, "moderada");
-confere("74% = moderada", nivelDaSala({ ocupacao: 74, capacidade: 100, agora: {} }).chave, "moderada");
-confere("75% = lotada", nivelDaSala({ ocupacao: 75, capacidade: 100, agora: {} }).chave, "lotada");
-confere("99% = lotada", nivelDaSala({ ocupacao: 99, capacidade: 100, agora: {} }).chave, "lotada");
-confere("100% = cheia", nivelDaSala({ ocupacao: 100, capacidade: 100, agora: {} }).chave, "cheia");
-confere("acima da capacidade: pct real", nivelDaSala({ ocupacao: 130, capacidade: 100, agora: {} }).pct, 130);
-confere("acima da capacidade = cheia", nivelDaSala({ ocupacao: 130, capacidade: 100, agora: {} }).chave, "cheia");
-confere("capacidade 0: sem divisão por zero", nivelDaSala({ ocupacao: 3, capacidade: 0, agora: {} }).pct, 0);
-confere("com sessão e vazia = tranquila (não livre)", nivelDaSala({ ocupacao: 0, capacidade: 100, agora: {} }).chave, "tranquila");
-confere("arredonda a %", nivelDaSala({ ocupacao: 1, capacidade: 3, agora: {} }).pct, 33);
-confere("rótulo em inglês", nivelDaSala({ ocupacao: 83, capacidade: 100, agora: {} }).rotulo, "Almost full");
-confere("rótulo livre", nivelDaSala({ ocupacao: 0, capacidade: 100, agora: null }).rotulo, "Empty");
-// A mesma sala com capacidade menor (momento diferente do congresso) fica mais cheia
-confere("capacidade menor = % maior", nivelDaSala({ ocupacao: 60, capacidade: 80, agora: {} }).pct, 75);
+// nivelDaSala (a % vem da estimativa do voluntário)
+const com = (porcentagem) => ({ estimativa: { porcentagem } });
+confere("sem estimativa", nivelDaSala({ estimativa: null }).chave, "sem");
+confere("sem estimativa: rótulo", nivelDaSala({ estimativa: null }).rotulo, "No estimate yet");
+confere("sem estimativa: mostra um traço", nivelDaSala({ estimativa: null }).texto, "—");
+confere("0% = livre", nivelDaSala(com(0)).chave, "livre");
+confere("0%: rótulo", nivelDaSala(com(0)).rotulo, "Empty");
+confere("10% = tranquila", nivelDaSala(com(10)).chave, "tranquila");
+confere("30% = tranquila", nivelDaSala(com(30)).chave, "tranquila");
+confere("40% = moderada", nivelDaSala(com(40)).chave, "moderada");
+confere("70% = moderada", nivelDaSala(com(70)).chave, "moderada");
+confere("80% = lotada", nivelDaSala(com(80)).chave, "lotada");
+confere("90%: rótulo em inglês", nivelDaSala(com(90)).rotulo, "Almost full");
+confere("100% = cheia", nivelDaSala(com(100)).chave, "cheia");
+confere("gente em pé = cheia", nivelDaSala(com(110)).chave, "cheia");
+confere("gente em pé aparece como 100%+", nivelDaSala(com(110)).texto, "100%+");
+confere("60% aparece como 60%", nivelDaSala(com(60)).texto, "60%");
 
 // ordenarSalas
 const lista = [{ tipo: "sala", codigo: "S1" }, { tipo: "auditorio", codigo: "A2" }, { tipo: "auditorio", codigo: "A1" }, { tipo: "sala", codigo: "S10" }];

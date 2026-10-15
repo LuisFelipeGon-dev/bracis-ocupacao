@@ -654,25 +654,54 @@ body {
   white-space: nowrap;
 }
 
-.ocupacao {
-  text-align: center;
-  font-size: 4rem;
-  font-weight: 700;
-  line-height: 1.1;
+#sessao-agora {
   margin-bottom: 0.5rem;
-}
-
-.ocupacao small {
-  font-size: 1.5rem;
   color: var(--pico-muted-color);
 }
 
-/* Botões +1 e −1: grandes, para acertar fácil com o dedo */
-.btn-grande {
-  width: 100%;
-  font-size: 1.6rem;
-  padding: 1.25rem;
-  margin-bottom: 0.75rem;
+/* Estimativa que vale agora: número grande e, embaixo, quando e por quem */
+.estimativa-atual {
+  margin-bottom: 1rem;
+}
+
+.estimativa-atual span {
+  display: block;
+  font-size: 3.5rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.estimativa-atual small {
+  color: var(--pico-muted-color);
+}
+
+/* Botões de 0% a 100%: grade de 3 colunas, grandes para acertar fácil com o dedo.
+   O "gente em pé" ocupa a linha inteira. */
+.botoes-porcentagem {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.botoes-porcentagem button {
+  margin: 0;
+  min-height: 3.5rem;
+  font-size: 1.3rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.botoes-porcentagem .em-pe {
+  grid-column: 1 / -1;
+  font-size: 1.1rem;
+}
+
+/* O botão da estimativa atual fica preenchido */
+.botoes-porcentagem button[aria-pressed="true"] {
+  background: var(--pico-primary-background);
+  border-color: var(--pico-primary-background);
+  color: var(--pico-primary-inverse);
 }
 
 #lista-ambientes button {
@@ -687,8 +716,7 @@ body {
   margin-bottom: 0.5rem;
 }
 
-.erro,
-.lotado {
+.erro {
   color: var(--lotado);
 }
 
@@ -726,7 +754,7 @@ footer p {
   overflow-x: auto;
 }
 
-/* Sala sem registro há mais de 10 minutos */
+/* Sala com sessão agora e sem estimativa nesta sessão */
 tr.parada td {
   background-color: var(--alerta-fundo);
 }

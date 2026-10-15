@@ -1,11 +1,12 @@
 # Ocupação das salas do BRACIS 2026
 
 Site que mostra em tempo real a lotação (em %) de cada sala do BRACIS 2026 (19 a 22 de outubro,
-UniSENAI, Cuiabá) e o que está acontecendo nela. Voluntários na porta de cada sala registram pelo
-celular quem entra e quem sai, e um totem digital mostra a lotação para os participantes.
+UniSENAI, Cuiabá) e o que está acontecendo nela. Voluntários olham a sala e informam pelo celular
+uma estimativa da lotação (0% a 100%, de 10 em 10, ou "lotada, gente em pé"), e um totem digital
+mostra a lotação para os participantes.
 
-Cada entrada e saída fica gravada no banco (sala, horário e voluntário), e depois do evento sai um
-relatório de quantas pessoas passaram por cada sessão.
+Cada estimativa fica gravada no banco (sala, %, horário e voluntário), e depois do evento sai um
+relatório com a maior estimativa e a média de cada sessão.
 
 No ar em https://bracis.ic.ufmt.br/live/
 
@@ -21,15 +22,16 @@ O site todo fica debaixo de `/live`.
 | Endereço | Para quem | O que tem |
 |---|---|---|
 | `/live/` | Totem | Tela única, em pé, sem botões e sem rolagem, só em inglês: as 7 salas com a % de lotação, a sessão de agora e a próxima |
-| `/live/voluntario` | Voluntários | Contagem na porta: +1, −1, várias pessoas de uma vez e Desfazer (login com e-mail e PIN) |
-| `/live/coordenacao` | Coordenação | Situação das salas, capacidade de cada sala, voluntários (cadastro, importação, novo PIN, desativar), relatório por sessão e histórico em CSV |
+| `/live/voluntario` | Voluntários | Estimativa da lotação: um toque na % (login com e-mail e PIN) |
+| `/live/coordenacao` | Coordenação | Estimativa de cada sala, voluntários (cadastro, importação, novo PIN, desativar), relatório por sessão e as estimativas em CSV |
 
-Por que só %: a capacidade das salas muda conforme o momento do congresso. A coordenação muda a
-capacidade no painel e o totem passa a mostrar a % com a capacidade nova em até 10 segundos.
-Os voluntários e a coordenação continuam vendo o número exato de pessoas.
+**Validade da estimativa** (em `estimativas.py`): cada estimativa vale até a sessão daquela sala
+mudar (começar ou terminar). Assim o totem nunca mostra o número da sessão anterior: até alguém
+informar de novo, aparece "No estimate yet". O início da sessão conta 15 minutos antes, porque as
+pessoas chegam antes.
 
-**Níveis de lotação** (regra única, em `static/comum.js`): Empty (sem sessão e ninguém dentro),
-Plenty of seats (menos de 40%), Filling up (40 a 74%), Almost full (75 a 99%) e Full (100% ou mais).
+**Níveis de lotação** (regra única, em `static/comum.js`): Empty (0%), Plenty of seats (10 a 30%),
+Filling up (40 a 70%), Almost full (80 e 90%) e Full (100% ou gente em pé, que aparece como "100%+").
 
 O totem recarrega a página sozinho a cada hora (só se o servidor estiver respondendo), para pegar
 versões novas do site. Sem conexão por mais de 2 minutos, os cartões ficam apagados.
@@ -38,10 +40,10 @@ versões novas do site. Sem conexão por mais de 2 minutos, os cartões ficam ap
 
 | Arquivo | O que faz |
 |---|---|
-| `main.py` | Servidor (FastAPI): páginas, login, contagem, painel da coordenação |
-| `database.py` | Banco SQLite e a **lista das salas** (`AMBIENTES_EXEMPLO`: código, nome, tipo e capacidade inicial; depois a capacidade é mudada no painel) |
+| `main.py` | Servidor (FastAPI): páginas, login, estimativas, painel da coordenação |
+| `database.py` | Banco SQLite e a **lista das salas** (`AMBIENTES_EXEMPLO`: código, nome e tipo) |
 | `programacao.py` | Lê a planilha da programação (Google Sheets publicado como CSV) |
-| `relatorio.py` | Relatório por sessão (entradas, saídas e pico de público) |
+| `estimativas.py` | Validade da estimativa ("zera a cada sessão") e relatório por sessão (maior e média) |
 | `static/` | Páginas: `index.html` (totem), `voluntario.html`, `coordenacao.html` |
 | `static/tokens.css`, `static/publico.css` | Visual do totem (cores, fontes e tamanhos proporcionais à tela) |
 | `static/estilo.css`, `static/pico.min.css` | Visual das páginas dos voluntários e da coordenação (em cima do Pico CSS) |

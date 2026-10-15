@@ -12,8 +12,8 @@ database.criar_banco(criar_voluntarios_exemplo=True)
 
 with database.conectar() as conn:
     conn.execute(
-        "INSERT INTO eventos (ambiente_codigo, tipo, quantidade, horario, voluntario_id) "
-        "VALUES ('A1', 'entrada', 7, '2026-10-19T09:00:00-04:00', 1)"
+        "INSERT INTO estimativas (ambiente_codigo, porcentagem, horario, voluntario_id) "
+        "VALUES ('A1', 70, '2026-10-19T09:00:00-04:00', 1)"
     )
     # Duas salas que não estão mais na lista (como o A3 e o laboratório de antes):
     # uma sem registros e outra com registros.
@@ -22,24 +22,24 @@ with database.conectar() as conn:
     conn.execute("INSERT INTO sessoes (ambiente_codigo, titulo, inicio, fim) "
                  "VALUES ('L1', 'Minicurso', '2026-10-20T14:00', '2026-10-20T17:00')")
     conn.execute(
-        "INSERT INTO eventos (ambiente_codigo, tipo, quantidade, horario, voluntario_id) "
-        "VALUES ('A3', 'entrada', 2, '2026-10-19T09:00:00-04:00', 1)"
+        "INSERT INTO estimativas (ambiente_codigo, porcentagem, horario, voluntario_id) "
+        "VALUES ('A3', 20, '2026-10-19T09:00:00-04:00', 1)"
     )
     print("antes: ", database.obter_ambiente(conn, "A1"))
 
 # Simula a lista nova chegando da organização.
 posicao_a1 = [a[0] for a in database.AMBIENTES_EXEMPLO].index("A1")
-database.AMBIENTES_EXEMPLO[posicao_a1] = ("A1", "Arena 1", "auditorio", 350)
+database.AMBIENTES_EXEMPLO[posicao_a1] = ("A1", "Arena 1", "auditorio")
 database.criar_banco(criar_voluntarios_exemplo=True)
 
 with database.conectar() as conn:
     a1 = database.obter_ambiente(conn, "A1")
     print("depois:", a1)
     codigos = {linha[0] for linha in conn.execute("SELECT codigo FROM ambientes")}
+    estimativas_a1 = conn.execute("SELECT COUNT(*) FROM estimativas WHERE ambiente_codigo = 'A1'").fetchone()[0]
 
 assert a1["nome"] == "Arena 1", "não atualizou o nome"
-assert a1["capacidade"] == 200, "a capacidade é da coordenação: a lista não pode sobrescrever"
-assert a1["ocupacao"] == 7, "perdeu a contagem"
+assert estimativas_a1 == 1, "perdeu as estimativas da sala"
 assert "L1" not in codigos, "sala fora da lista e sem registros deveria sair"
 assert "A3" in codigos, "sala fora da lista com registros deveria ficar"
 assert len(codigos) == 8, "duplicou salas"

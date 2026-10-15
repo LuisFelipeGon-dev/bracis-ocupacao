@@ -16,12 +16,16 @@ function el(tag, classe, texto) {
 
 
 // ---------- Nível de lotação ----------
-// O totem mostra só a porcentagem (a capacidade muda conforme o momento do congresso).
-//   Empty:            sem sessão agora e ninguém dentro
-//   Plenty of seats:  menos de 40%   ·   Filling up: 40% a 74%
-//   Almost full:      75% a 99%      ·   Full:       100% ou mais
+// A % é a estimativa que o voluntário informou (0, 10 ... 100, ou 110 = gente em pé).
+//   No estimate yet:  ninguém informou nesta sessão (a estimativa "zera" quando a sessão muda)
+//   Empty:            0%
+//   Plenty of seats:  10% a 30%      ·   Filling up: 40% a 70%
+//   Almost full:      80% e 90%      ·   Full:       100% ou "gente em pé" (aparece "100%+")
+
+const GENTE_EM_PE = 110;
 
 const ROTULOS_NIVEL = {
+  sem: "No estimate yet",
   livre: "Empty",
   tranquila: "Plenty of seats",
   moderada: "Filling up",
@@ -30,14 +34,17 @@ const ROTULOS_NIVEL = {
 };
 
 function nivelDaSala(ambiente) {
-  const pct = ambiente.capacidade > 0 ? Math.round((ambiente.ocupacao / ambiente.capacidade) * 100) : 0;
+  const estimativa = ambiente.estimativa;
+  if (!estimativa) return { chave: "sem", pct: null, texto: "—", rotulo: ROTULOS_NIVEL.sem };
+  const pct = estimativa.porcentagem;
   let chave;
-  if (!ambiente.agora && ambiente.ocupacao === 0) chave = "livre";
+  if (pct === 0) chave = "livre";
   else if (pct >= 100) chave = "cheia";
   else if (pct >= 75) chave = "lotada";
   else if (pct >= 40) chave = "moderada";
   else chave = "tranquila";
-  return { chave, pct, rotulo: ROTULOS_NIVEL[chave] };
+  const texto = pct === GENTE_EM_PE ? "100%+" : `${pct}%`;
+  return { chave, pct, texto, rotulo: ROTULOS_NIVEL[chave] };
 }
 
 

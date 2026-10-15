@@ -8,7 +8,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Coordenação — BRACIS 2026</title>
   <link rel="stylesheet" href="static/pico.min.css"> <!-- Pico CSS 2.1.1, guardado aqui (não depende de CDN) -->
-  <link rel="stylesheet" href="static/estilo.css">
+  <link rel="stylesheet" href="static/estilo.css?v=2">
 </head>
 <body>
   <header class="topo">
@@ -46,39 +46,32 @@
             <thead>
               <tr>
                 <th>Sala</th>
-                <th>Agora</th>
-                <th>Capacidade</th>
-                <th>Entradas</th>
-                <th>Saídas</th>
-                <th>Último registro</th>
+                <th>Sessão agora</th>
+                <th>Estimativa agora</th>
+                <th>Última informada</th>
               </tr>
             </thead>
             <tbody id="tabela-situacao"></tbody>
           </table>
         </div>
-        <p><small>Linhas destacadas: mais de 10 minutos sem nenhum registro.</small></p>
+        <p>
+          <small>
+            Os voluntários informam a lotação em %. Cada estimativa vale até a sessão mudar
+            (começar ou terminar); depois disso o totem mostra "No estimate yet" até alguém informar de novo.
+            Linhas destacadas: sala com sessão agora e ainda sem estimativa.
+          </small>
+        </p>
 
-        <details>
-          <summary>Mudar capacidade de uma sala</summary>
-          <form id="form-capacidade">
-            <p><small>O totem mostra a lotação em % da capacidade. A mudança aparece nele em até 10 segundos.</small></p>
-            <label>Sala <select name="codigo" required></select></label>
-            <label>Nova capacidade (lugares) <input type="number" name="capacidade" min="1" max="5000" required></label>
-            <button type="submit">Salvar capacidade</button>
-          </form>
-        </details>
-
-        <a href="coordenacao/eventos.csv" role="button" class="secondary">Baixar histórico (CSV)</a>
+        <a href="coordenacao/estimativas.csv" role="button" class="secondary">Baixar todas as estimativas (CSV)</a>
       </section>
 
       <section>
         <h2>Relatório por sessão</h2>
         <p>
           <small>
-            <strong>Entradas</strong>: quem entrou durante a sessão ou até 30 min antes dela começar.
-            <strong>Saídas</strong>: quem saiu durante a sessão ou até 30 min depois do fim.
-            <strong>Pico</strong>: o maior número de pessoas na sala durante a sessão
-            (inclui quem já estava lá antes; é a melhor medida de público).
+            Contam para a sessão as estimativas informadas desde 15 min antes do início até o fim.
+            <strong>Maior</strong>: a maior estimativa (a melhor medida de público).
+            <strong>Média</strong>: a média das estimativas. "100%+" = lotada, com gente em pé.
           </small>
         </p>
         <div class="rolagem">
@@ -86,13 +79,12 @@
             <thead>
               <tr>
                 <th>Dia</th><th>Horário</th><th>Sala</th><th>Sessão</th>
-                <th>Entradas</th><th>Saídas</th><th>Pico</th>
+                <th>Estimativas</th><th>Maior</th><th>Média</th>
               </tr>
             </thead>
             <tbody id="tabela-relatorio"></tbody>
           </table>
         </div>
-        <p id="relatorio-fora"><small></small></p>
         <div class="botoes">
           <button class="secondary" id="btn-atualizar-relatorio">Atualizar relatório</button>
           <a href="coordenacao/relatorio.csv" role="button" class="secondary outline">Baixar relatório (CSV)</a>
@@ -173,6 +165,6 @@
     </div>
   </main>
 
-  <script src="static/coordenacao.js"></script>
+  <script src="static/coordenacao.js?v=2"></script>
 </body>
 </html>

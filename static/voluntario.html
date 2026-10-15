@@ -6,15 +6,15 @@
   <link rel="icon" href="static/favicon.ico" sizes="16x16 32x32 48x48">
   <link rel="apple-touch-icon" href="static/apple-touch-icon.png">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Contagem — BRACIS 2026</title>
+  <title>Lotação — BRACIS 2026</title>
   <link rel="stylesheet" href="static/pico.min.css"> <!-- Pico CSS 2.1.1, guardado aqui (não depende de CDN) -->
-  <link rel="stylesheet" href="static/estilo.css">
+  <link rel="stylesheet" href="static/estilo.css?v=2">
 </head>
 <body>
   <header class="topo">
     <div class="container">
       <img src="static/logo-bracis.png" alt="BRACIS 2026" width="1200" height="500">
-      <span class="topo-rotulo">Contagem</span>
+      <span class="topo-rotulo">Lotação</span>
     </div>
   </header>
 
@@ -38,35 +38,28 @@
       </form>
     </section>
 
-    <!-- Tela 2: escolher em qual sala o voluntário está contando -->
+    <!-- Tela 2: escolher de qual sala o voluntário vai informar a lotação -->
     <section id="tela-ambientes" hidden>
-      <p>Olá, <strong class="nome-voluntario"></strong>! Em qual sala você está contando?</p>
+      <p>Olá, <strong class="nome-voluntario"></strong>! De qual sala você vai informar a lotação?</p>
       <div id="lista-ambientes"></div>
       <button class="secondary outline largura-total" data-acao="sair">Trocar voluntário</button>
     </section>
 
-    <!-- Tela 3: contagem -->
-    <section id="tela-contagem" hidden>
+    <!-- Tela 3: estimativa. O voluntário olha a sala e toca na % que acha que está ocupada. -->
+    <section id="tela-estimativa" hidden>
       <h2 id="nome-ambiente" class="centro"></h2>
-      <p class="ocupacao">
-        <span id="ocupacao">0</span><small> / <span id="capacidade">0</span></small>
+      <p id="sessao-agora" class="centro"></p>
+      <p class="estimativa-atual centro">
+        <span id="estimativa">—</span>
+        <small id="estimativa-quando">Ainda sem estimativa nesta sessão</small>
       </p>
-      <p id="aviso-lotado" class="centro erro" hidden>Lotado</p>
 
-      <button id="btn-entrou" class="btn-grande">+1 Entrou</button>
-      <button id="btn-saiu" class="btn-grande secondary">−1 Saiu</button>
-
-      <label for="qtd-grupo">Várias pessoas de uma vez</label>
-      <fieldset role="group">
-        <input type="number" id="qtd-grupo" min="1" max="500" inputmode="numeric" placeholder="Quantas?">
-        <button id="btn-grupo-entrou">Entraram</button>
-        <button id="btn-grupo-saiu" class="secondary">Saíram</button>
-      </fieldset>
-
-      <button id="btn-desfazer" class="contrast outline largura-total">Desfazer meu último registro</button>
+      <p class="centro"><small>Quanto da sala está ocupado agora?</small></p>
+      <!-- Os botões de 0% a 100% e o "gente em pé" são criados pelo voluntario.js -->
+      <div id="botoes-porcentagem" class="botoes-porcentagem"></div>
 
       <footer class="centro">
-        <p>Contando: <strong class="nome-voluntario"></strong></p>
+        <p>Informando: <strong class="nome-voluntario"></strong></p>
         <!-- Botões (e não links) para ficarem fáceis de tocar: pelo menos 44 px -->
         <div class="botoes-rodape">
           <button class="secondary outline" data-acao="trocar-sala">Trocar sala</button>
@@ -76,6 +69,6 @@
     </section>
   </main>
 
-  <script src="static/voluntario.js"></script>
+  <script src="static/voluntario.js?v=2"></script>
 </body>
 </html>

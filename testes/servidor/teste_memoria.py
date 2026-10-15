@@ -24,22 +24,24 @@ relogio = [1000.0]
 main.time.monotonic = lambda: relogio[0]
 
 
-def entra(sala, quantidade):
+def estima(sala, porcentagem):
+    # Grava direto no banco (sem passar pela rota, que limparia a memória)
     with database.conectar() as conn:
-        conn.execute("INSERT INTO eventos (ambiente_codigo, tipo, quantidade, horario, voluntario_id) "
-                     "VALUES (?, 'entrada', ?, '2026-10-20T09:00:00-04:00', 1)", (sala, quantidade))
+        conn.execute("INSERT INTO estimativas (ambiente_codigo, porcentagem, horario, voluntario_id) "
+                     "VALUES (?, ?, ?, 1)", (sala, porcentagem, main.datetime.now(main.FUSO_CUIABA).isoformat()))
 
 
-def ocupacao_publica(sala):
-    return next(a for a in main.listar_ambientes() if a["codigo"] == sala)["ocupacao"]
+def estimativa_publica(sala):
+    estimativa = next(a for a in main.listar_ambientes() if a["codigo"] == sala)["estimativa"]
+    return estimativa and estimativa["porcentagem"]
 
 
-confere("começa vazia", ocupacao_publica("A1"), 0)
-entra("A1", 5)
-confere("dentro de 2 s: resposta guardada", ocupacao_publica("A1"), 0)
-confere("voluntário vê o número exato na hora (sem memória)", main.obter_ambiente("A1")["ocupacao"], 5)
+confere("começa sem estimativa", estimativa_publica("A1"), None)
+estima("A1", 50)
+confere("dentro de 2 s: resposta guardada", estimativa_publica("A1"), None)
+confere("voluntário vê na hora (sem memória)", main.obter_ambiente("A1")["estimativa"]["porcentagem"], 50)
 relogio[0] += 2.1
-confere("depois de 2 s: recalcula", ocupacao_publica("A1"), 5)
+confere("depois de 2 s: recalcula", estimativa_publica("A1"), 50)
 confere("7 ambientes no totem", len(main.listar_ambientes()), 7)
 
 print("\nTudo certo." if not falhas else f"\n{falhas} FALHA(S)")

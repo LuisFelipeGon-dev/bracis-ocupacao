@@ -1,7 +1,6 @@
 // Painel da coordenação: situação das salas e gerenciamento dos voluntários.
 
 const INTERVALO = 10000;         // atualiza a tabela das salas a cada 10 segundos
-const MINUTOS_SEM_REGISTRO = 10; // a partir daqui, a linha da sala fica destacada
 
 // Atalho para pegar um elemento pelo id.
 const $ = (id) => document.getElementById(id);
@@ -34,7 +33,7 @@ async function api(metodo, rota, dados) {
 
 // Os erros que nós escrevemos vêm como texto. Os de formato (422, do FastAPI) vêm como
 // lista, em inglês: aí dizemos só qual campo foi recusado.
-const NOMES_CAMPOS = { nome: "nome", email: "e-mail", senha: "senha", texto: "lista", quantidade: "quantidade", capacidade: "nova capacidade" };
+const NOMES_CAMPOS = { nome: "nome", email: "e-mail", senha: "senha", texto: "lista" };
 function textoDoErro(corpo) {
   if (typeof corpo.detail === "string") return corpo.detail;
   const campo = corpo.detail?.[0]?.loc?.at(-1);
@@ -114,69 +113,30 @@ function abrirPainel() {
 
 // ---------- Situação das salas ----------
 
+// 60 -> "60%"; 110 -> "100%+" (lotada, com gente em pé); null -> "—"
+const textoPorcentagem = (p) => (p === null ? "—" : p === 110 ? "100%+" : `${p}%`);
+
 async function atualizarSituacao() {
   try {
     const ambientes = await api("GET", "coordenacao/situacao");
     const linhas = ambientes.map((a) => {
-      const ultimo = a.ultimo_registro
-        ? `${tempoDesde(a.ultimo_registro)} (${a.ultimo_voluntario})`
-        : "nenhum";
-      const tr = linhaTabela([
-        a.nome,
-        `${a.ocupacao} (${porcentagem(a)})`,
-        a.capacidade,
-        a.entradas,
-        a.saidas,
-        ultimo,
-      ]);
-      const minutos = a.ultimo_registro
-        ? (Date.now() - new Date(a.ultimo_registro)) / 60000
-        : 0;
-      tr.classList.toggle("parada", minutos > MINUTOS_SEM_REGISTRO);
+      const agora = a.estimativa
+        ? `${textoPorcentagem(a.estimativa.porcentagem)} (${hora(a.estimativa.horario)}, ${a.estimativa.voluntario})`
+        : "sem estimativa";
+      const ultima = a.ultima
+        ? `${textoPorcentagem(a.ultima.porcentagem)} ${tempoDesde(a.ultima.horario)} (${a.ultima.voluntario})`
+        : "nenhuma";
+      const tr = linhaTabela([a.nome, a.agora ? a.agora.titulo : "—", agora, ultima]);
+      // Destaque: está acontecendo uma sessão e ninguém informou a lotação dela ainda
+      tr.classList.toggle("parada", Boolean(a.agora) && !a.estimativa);
       return tr;
     });
     $("tabela-situacao").replaceChildren(...linhas);
     $("atualizado").textContent = `Atualizado às ${new Date().toLocaleTimeString("pt-BR")}`;
-    preencherSalas(ambientes);
   } catch (erro) {
     mensagem(erro.message, "erro");
   }
 }
-
-// "45%": a mesma conta do totem (comum.js)
-const porcentagem = (a) => `${a.capacidade > 0 ? Math.round((a.ocupacao / a.capacidade) * 100) : 0}%`;
-
-
-// ---------- Capacidade ----------
-
-// Preenche a lista de salas do formulário só uma vez (senão, a cada 10 s, a escolha se perderia).
-function preencherSalas(ambientes) {
-  const lista = $("form-capacidade").codigo;
-  if (lista.options.length > 0) return;
-  for (const a of ambientes) {
-    const opcao = new Option(`${a.nome} (hoje: ${a.capacidade})`, a.codigo);
-    opcao.dataset.nome = a.nome;
-    lista.append(opcao);
-  }
-}
-
-$("form-capacidade").addEventListener("submit", async (evento) => {
-  evento.preventDefault();
-  const form = evento.target;
-  const opcao = form.codigo.selectedOptions[0];
-  const nome = opcao.dataset.nome;
-  try {
-    const { capacidade } = await api("POST", `coordenacao/ambientes/${form.codigo.value}/capacidade`, {
-      capacidade: Number(form.capacidade.value),
-    });
-    opcao.textContent = `${nome} (hoje: ${capacidade})`;
-    form.capacidade.value = "";
-    mensagem(`Capacidade de ${nome} agora é ${capacidade}.`, "ok");
-    atualizarSituacao();
-  } catch (erro) {
-    mensagem(erro.message, "erro");
-  }
-});
 
 setInterval(() => {
   if (!$("tela-painel").hidden && !document.hidden) atualizarSituacao();
@@ -187,30 +147,23 @@ setInterval(() => {
 
 async function carregarRelatorio() {
   try {
-    const dados = await api("GET", "coordenacao/relatorio");
-    const linhas = dados.sessoes.map((s) =>
+    const sessoes = await api("GET", "coordenacao/relatorio");
+    const linhas = sessoes.map((s) =>
       linhaTabela([
         diaMes(s.inicio),
         `${hora(s.inicio)}–${hora(s.fim)}`,
         s.ambiente,
         s.titulo,
-        s.entradas,
-        s.saidas,
-        // Pico vazio = a sessão ainda não começou
-        s.pico === null ? "—" : `${s.pico} / ${s.capacidade}`,
+        s.estimativas,
+        // "—" = nenhuma estimativa (a sessão ainda não aconteceu, ou ninguém informou)
+        textoPorcentagem(s.maior),
+        textoPorcentagem(s.media),
       ])
     );
     if (linhas.length === 0) {
       linhas.push(linhaTabela(["Nenhuma sessão na programação.", "", "", "", "", "", ""]));
     }
     $("tabela-relatorio").replaceChildren(...linhas);
-
-    const fora = dados.fora_da_programacao
-      .map((f) => `${f.ambiente}: ${plural(f.entradas, "entrada", "entradas")}, ${plural(f.saidas, "saída", "saídas")}`)
-      .join(" · ");
-    $("relatorio-fora").firstElementChild.textContent = fora
-      ? `Fora da programação (registros sem sessão perto do horário): ${fora}`
-      : "";
   } catch (erro) {
     mensagem(erro.message, "erro");
   }

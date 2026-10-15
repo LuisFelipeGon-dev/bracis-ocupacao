@@ -1,4 +1,4 @@
-"""Quanto a lista das salas demora com o banco cheio como no fim do evento?"""
+"""Quanto a lista das salas demora com muitas estimativas no banco (bem mais que no evento todo)?"""
 import os
 import random
 import sys
@@ -10,6 +10,7 @@ RAIZ = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 os.chdir(RAIZ)
 sys.path.insert(0, RAIZ)
 import database
+import estimativas
 import programacao
 
 database.ARQUIVO_BANCO = os.path.join(tempfile.mkdtemp(), "cheio.db")
@@ -30,21 +31,23 @@ def lista_salas():
     with database.conectar() as conn:
         database.listar_ambientes(conn)
         programacao.agora_e_depois(conn, datetime(2026, 10, 21, 14, 30))
+        estimativas.estimativas_atuais(conn, datetime(2026, 10, 21, 14, 30))
 
 
-def tela_voluntario():
+def relatorio():
     with database.conectar() as conn:
-        database.obter_ambiente(conn, "A1")
+        estimativas.relatorio(conn)
 
 
-for total in [100, 20_000, 80_000]:
+# 7 salas x 4 dias x uma estimativa a cada 5 min = uns 2.700; testamos bem mais que isso.
+for total in [100, 5_000, 20_000]:
     with database.conectar() as conn:
-        conn.execute("DELETE FROM eventos")
+        conn.execute("DELETE FROM estimativas")
         base = datetime(2026, 10, 19, 8, 0)
         conn.executemany(
-            "INSERT INTO eventos (ambiente_codigo, tipo, quantidade, horario, voluntario_id) VALUES (?, ?, 1, ?, 1)",
-            [(random.choice(salas), "entrada" if i % 2 == 0 else "saida",
+            "INSERT INTO estimativas (ambiente_codigo, porcentagem, horario, voluntario_id) VALUES (?, ?, ?, 1)",
+            [(random.choice(salas), random.choice(estimativas.PORCENTAGENS),
               (base + timedelta(seconds=i * 13)).strftime("%Y-%m-%dT%H:%M:%S-04:00")) for i in range(total)])
-    print(f"{total:,} registros no banco:".replace(",", "."))
+    print(f"{total:,} estimativas no banco:".replace(",", "."))
     medir("lista das salas (/ambientes)", lista_salas)
-    medir("uma sala (/ambientes/A1, voluntário)", tela_voluntario, vezes=100)
+    medir("relatório por sessão (coordenação)", relatorio, vezes=5)
