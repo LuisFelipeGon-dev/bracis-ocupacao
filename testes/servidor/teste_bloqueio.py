@@ -14,7 +14,6 @@ from fastapi import HTTPException
 from starlette.requests import Request
 import main
 
-main.SENHA_COORDENACAO = "senha-certa"
 
 
 def pedido(ip):

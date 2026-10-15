@@ -26,9 +26,24 @@ load_dotenv()  # lê as configurações do arquivo .env, se existir
 # Cuiabá fica em UTC−4 o ano todo (não tem horário de verão).
 FUSO_CUIABA = timezone(timedelta(hours=-4))
 
-# Usuário e senha do painel da coordenação. Sem eles no .env, o painel fica desligado.
-USUARIO_COORDENACAO = os.getenv("USUARIO_COORDENACAO")
-SENHA_COORDENACAO = os.getenv("SENHA_COORDENACAO")
+def ler_contas_coordenacao() -> dict:
+    """Contas do painel da coordenação, do .env: {"luis": "senha", ...}. Sem nenhuma, o painel fica desligado.
+
+    CONTAS_COORDENACAO="luis:senha1,coordenacao:senha2" (usuário:senha, separados por vírgula).
+    Sem ela, vale o formato antigo, de uma conta só: USUARIO_COORDENACAO e SENHA_COORDENACAO.
+    """
+    contas = {}
+    for conta in os.getenv("CONTAS_COORDENACAO", "").split(","):
+        usuario, _, senha = conta.partition(":")  # partition: corta só no primeiro ":"
+        if usuario.strip() and senha:
+            contas[usuario.strip().lower()] = senha
+    usuario, senha = os.getenv("USUARIO_COORDENACAO"), os.getenv("SENHA_COORDENACAO")
+    if not contas and usuario and senha:
+        contas[usuario.strip().lower()] = senha
+    return contas
+
+
+CONTAS_COORDENACAO = ler_contas_coordenacao()
 
 # De quanto em quanto tempo o site relê a planilha da programação.
 INTERVALO_PROGRAMACAO = timedelta(minutes=10)
@@ -328,20 +343,20 @@ ESPERA_SENHA_ERRADA = 1  # segundos
 
 @rotas.post("/coordenacao/login")
 async def login_coordenacao(dados: LoginCoordenacao, request: Request):
-    if not USUARIO_COORDENACAO or not SENHA_COORDENACAO:
+    if not CONTAS_COORDENACAO:
         raise HTTPException(
             status_code=503,
-            detail="Painel desligado: defina USUARIO_COORDENACAO e SENHA_COORDENACAO no arquivo .env.",
+            detail="Painel desligado: defina CONTAS_COORDENACAO no arquivo .env.",
         )
     # compare_digest compara sem "vazar" pelo tempo de resposta quantas letras acertou.
-    # Confere os dois sempre (e não para no primeiro errado), pelo mesmo motivo.
-    usuario_certo = hmac.compare_digest(dados.usuario.strip().lower().encode(), USUARIO_COORDENACAO.lower().encode())
-    senha_certa = hmac.compare_digest(dados.senha.encode(), SENHA_COORDENACAO.encode())
-    if not (usuario_certo and senha_certa):
+    # Usuário que não existe também compara (com uma senha vazia), para não revelar quais existem.
+    senha_guardada = CONTAS_COORDENACAO.get(dados.usuario.strip().lower(), "")
+    senha_certa = hmac.compare_digest(dados.senha.encode(), senha_guardada.encode())
+    if not (senha_guardada and senha_certa):
         # asyncio.sleep espera sem travar o site: os outros pedidos continuam sendo atendidos.
         await asyncio.sleep(ESPERA_SENHA_ERRADA)
         raise HTTPException(status_code=401, detail="Usuário ou senha incorretos.")
-    request.session["coordenacao"] = True
+    request.session["coordenacao"] = dados.usuario.strip().lower()  # quem da coordenação entrou
     return {"mensagem": "Bem-vindo(a) ao painel."}
 
 

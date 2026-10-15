@@ -15,8 +15,8 @@ from fastapi import HTTPException
 from starlette.requests import Request
 import main
 
-main.USUARIO_COORDENACAO = "luis"
-main.SENHA_COORDENACAO = "ipe-rio-cerrado-pantanal"
+os.environ["CONTAS_COORDENACAO"] = "luis:ipe-rio-cerrado-pantanal, Coordenacao:outra:senha"
+main.CONTAS_COORDENACAO = main.ler_contas_coordenacao()
 
 
 def pedido():
@@ -44,6 +44,9 @@ async def teste():
     confere("senha certa logo depois", await tenta("ipe-rio-cerrado-pantanal"), 200)
     confere("usuário errado com a senha certa", await tenta("ipe-rio-cerrado-pantanal", "maria"), 401)
     confere("usuário com maiúscula", await tenta("ipe-rio-cerrado-pantanal", "Luis"), 200)
+    confere("segunda conta (senha com \":\")", await tenta("outra:senha", "coordenacao"), 200)
+    confere("senha de uma conta não serve na outra", await tenta("ipe-rio-cerrado-pantanal", "coordenacao"), 401)
+    confere("usuário que não existe, senha vazia", await tenta("", "fantasma"), 401)
 
     # Enquanto uma senha errada espera 1 s, outro pedido é atendido na hora?
     inicio = time.monotonic()
