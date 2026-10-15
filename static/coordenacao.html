@@ -27,7 +27,11 @@
       <h1>Entrar no painel</h1>
       <form id="form-login">
         <label>
-          Senha da coordenação
+          Usuário
+          <input name="usuario" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" required>
+        </label>
+        <label>
+          Senha
           <input type="password" name="senha" autocomplete="current-password" required>
         </label>
         <button type="submit">Entrar</button>
@@ -117,10 +121,10 @@
 
         <!-- PINs recém-criados aparecem aqui, uma única vez -->
         <article id="pins-gerados" hidden>
-          <header><strong>Repasse estes PINs agora: eles não aparecem de novo.</strong></header>
+          <header><strong>Repasse estas senhas agora: elas não aparecem de novo.</strong></header>
           <div class="rolagem">
             <table>
-              <thead><tr><th>Nome</th><th>E-mail</th><th>PIN</th></tr></thead>
+              <thead><tr><th>Nome</th><th>Usuário</th><th>Senha</th></tr></thead>
               <tbody id="tabela-pins"></tbody>
             </table>
           </div>
@@ -131,7 +135,7 @@
         <div class="rolagem">
           <table>
             <thead>
-              <tr><th>Nome</th><th>E-mail</th><th>Situação</th><th>Ações</th></tr>
+              <tr><th>Nome</th><th>Usuário</th><th>Situação</th><th>Ações</th></tr>
             </thead>
             <tbody id="tabela-voluntarios"></tbody>
           </table>
@@ -141,7 +145,11 @@
           <summary>Cadastrar um voluntário</summary>
           <form id="form-voluntario">
             <label>Nome <input name="nome" required></label>
-            <label>E-mail <input type="email" name="email" required></label>
+            <label>Usuário <input name="usuario" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="ex.: contagem" required></label>
+            <label>
+              Senha (opcional)
+              <input name="pin" minlength="4" autocomplete="off" placeholder="vazio = o site sorteia uma de 6 dígitos">
+            </label>
             <button type="submit">Cadastrar</button>
           </form>
         </details>
@@ -150,9 +158,9 @@
           <summary>Importar lista de voluntários</summary>
           <form id="form-importar">
             <label>
-              Uma pessoa por linha, no formato <code>nome, e-mail</code>.
-              Dá para copiar as duas colunas direto da planilha.
-              <textarea name="texto" rows="6" placeholder="Maria Silva, maria@exemplo.com"></textarea>
+              Uma pessoa por linha, no formato <code>nome, usuário</code> ou <code>nome, usuário, senha</code>
+              (sem senha, o site sorteia uma). Dá para copiar as colunas direto da planilha.
+              <textarea name="texto" rows="6" placeholder="Maria Silva, maria"></textarea>
             </label>
             <button type="submit">Importar</button>
           </form>
@@ -165,6 +173,6 @@
     </div>
   </main>
 
-  <script src="static/coordenacao.js?v=2"></script>
+  <script src="static/coordenacao.js?v=3"></script>
 </body>
 </html>

@@ -33,7 +33,7 @@ async function api(metodo, rota, dados) {
 
 // Os erros que nós escrevemos vêm como texto. Os de formato (422, do FastAPI) vêm como
 // lista, em inglês: aí dizemos só qual campo foi recusado.
-const NOMES_CAMPOS = { nome: "nome", email: "e-mail", senha: "senha", texto: "lista" };
+const NOMES_CAMPOS = { nome: "nome", usuario: "usuário", senha: "senha", pin: "senha", texto: "lista" };
 function textoDoErro(corpo) {
   if (typeof corpo.detail === "string") return corpo.detail;
   const campo = corpo.detail?.[0]?.loc?.at(-1);
@@ -86,7 +86,7 @@ $("form-login").addEventListener("submit", async (evento) => {
   evento.preventDefault();
   const form = evento.target;
   try {
-    await api("POST", "coordenacao/login", { senha: form.senha.value });
+    await api("POST", "coordenacao/login", { usuario: form.usuario.value, senha: form.senha.value });
     form.reset();
     mensagem("", "");
     abrirPainel();
@@ -226,14 +226,14 @@ async function carregarVoluntarios() {
   try {
     const voluntarios = await api("GET", "coordenacao/voluntarios");
     const linhas = voluntarios.map((v) => {
-      const tr = linhaTabela([v.nome, v.email, v.ativo ? "Ativo" : "Desativado"]);
+      const tr = linhaTabela([v.nome, v.usuario, v.ativo ? "Ativo" : "Desativado"]);
 
       const acoes = document.createElement("td");
       const btnPin = document.createElement("button");
       btnPin.className = "secondary outline";
-      btnPin.textContent = "Novo PIN";
-      // O leitor de tela lê o nome junto ("Novo PIN para Maria"), já que o botão se repete em cada linha.
-      btnPin.setAttribute("aria-label", `Novo PIN para ${v.nome}`);
+      btnPin.textContent = "Nova senha";
+      // O leitor de tela lê o nome junto ("Nova senha para Maria"), já que o botão se repete em cada linha.
+      btnPin.setAttribute("aria-label", `Nova senha para ${v.nome}`);
       btnPin.addEventListener("click", () => novoPin(v));
 
       const btnAtivo = document.createElement("button");
@@ -256,7 +256,7 @@ async function carregarVoluntarios() {
 function mostrarPins(criados, erros = []) {
   $("tabela-pins").replaceChildren(
     ...criados.map((c) => {
-      const tr = linhaTabela([c.nome, c.email, c.pin]);
+      const tr = linhaTabela([c.nome, c.usuario, c.pin]);
       tr.lastChild.className = "pin";
       return tr;
     })
@@ -278,7 +278,7 @@ $("btn-fechar-pins").addEventListener("click", () => {
 });
 
 async function novoPin(voluntario) {
-  if (!confirm(`Gerar um PIN novo para ${voluntario.nome}? O PIN antigo deixa de funcionar.`)) return;
+  if (!confirm(`Gerar uma senha nova para ${voluntario.nome}? A senha antiga deixa de funcionar.`)) return;
   try {
     const resposta = await api("POST", `coordenacao/voluntarios/${voluntario.id}/novo-pin`);
     mostrarPins([resposta]);
@@ -306,7 +306,8 @@ $("form-voluntario").addEventListener("submit", async (evento) => {
   try {
     const criado = await api("POST", "coordenacao/voluntarios", {
       nome: form.nome.value,
-      email: form.email.value,
+      usuario: form.usuario.value,
+      pin: form.pin.value,
     });
     form.reset();
     mostrarPins([criado]);

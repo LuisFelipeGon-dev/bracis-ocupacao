@@ -22,7 +22,7 @@ O site todo fica debaixo de `/live`.
 | Endereço | Para quem | O que tem |
 |---|---|---|
 | `/live/` | Totem | Tela única, em pé, sem botões e sem rolagem, só em inglês: as 7 salas com a % de lotação, a sessão de agora e a próxima |
-| `/live/voluntario` | Voluntários | Estimativa da lotação: um toque na % (login com e-mail e PIN) |
+| `/live/voluntario` | Voluntários | Estimativa da lotação: um toque na % (login com usuário e senha; uma conta pode ser usada por vários voluntários) |
 | `/live/coordenacao` | Coordenação | Estimativa de cada sala, voluntários (cadastro, importação, novo PIN, desativar), relatório por sessão e as estimativas em CSV |
 
 **Validade da estimativa** (em `estimativas.py`): cada estimativa vale até a sessão daquela sala

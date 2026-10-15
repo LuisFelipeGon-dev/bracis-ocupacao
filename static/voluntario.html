@@ -27,11 +27,12 @@
       <h1>Entrar</h1>
       <form id="form-login">
         <label>
-          E-mail
-          <input type="email" name="email" autocomplete="username" required>
+          Usuário
+          <!-- autocapitalize/autocorrect: o celular não troca "contagem" por "Contagem" -->
+          <input name="usuario" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" required>
         </label>
         <label>
-          PIN
+          Senha
           <input type="password" name="pin" inputmode="numeric" autocomplete="current-password" required>
         </label>
         <button type="submit">Entrar</button>
@@ -69,6 +70,6 @@
     </section>
   </main>
 
-  <script src="static/voluntario.js?v=2"></script>
+  <script src="static/voluntario.js?v=3"></script>
 </body>
 </html>

@@ -41,13 +41,15 @@ def confere(nome, obtido, esperado):
 
 login = main.login
 Dados = main.DadosLogin
-email = "voluntario1@exemplo.com"
+usuario = "voluntario1"
 for _ in range(5):
-    status(login, Dados(email=email, pin="0000"), "200.1.1.1")
-confere("atacante bloqueado no e-mail do voluntário", status(login, Dados(email=email, pin="1111"), "200.1.1.1"), 429)
-confere("voluntário entra do celular dele", status(login, Dados(email=email, pin="1111"), "189.3.3.3"), 200)
+    status(login, Dados(usuario=usuario, pin="0000"), "200.1.1.1")
+confere("atacante bloqueado no usuário do voluntário", status(login, Dados(usuario=usuario, pin="1111"), "200.1.1.1"), 429)
+confere("voluntário entra do celular dele", status(login, Dados(usuario=usuario, pin="1111"), "189.3.3.3"), 200)
 
-main.liberar_todos_os_ips(email)  # o que o "Novo PIN" faz
-confere("depois do novo PIN, libera", status(login, Dados(email=email, pin="1111"), "200.1.1.1"), 200)
+main.liberar_todos_os_ips(usuario)  # o que a "Nova senha" faz
+confere("depois da senha nova, libera", status(login, Dados(usuario=usuario, pin="1111"), "200.1.1.1"), 200)
+confere("usuário com maiúscula e espaço também entra", status(login, Dados(usuario=" Voluntario1 ", pin="1111"), "189.3.3.3"), 200)
+confere("senha errada: 401", status(login, Dados(usuario="voluntario2", pin="9999"), "189.3.3.3"), 401)
 
 print("\nTudo certo." if not falhas else f"\n{falhas} FALHA(S)")

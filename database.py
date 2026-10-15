@@ -30,10 +30,11 @@ NOMES_NA_PLANILHA = {
     "A2": "Arena 2",
 }
 
+# (nome, usuário, PIN): só no computador de desenvolvimento
 VOLUNTARIOS_EXEMPLO = [
-    ("Voluntário Exemplo 1", "voluntario1@exemplo.com", "1111"),
-    ("Voluntário Exemplo 2", "voluntario2@exemplo.com", "2222"),
-    ("Voluntário Exemplo 3", "voluntario3@exemplo.com", "3333"),
+    ("Voluntário Exemplo 1", "voluntario1", "1111"),
+    ("Voluntário Exemplo 2", "voluntario2", "2222"),
+    ("Voluntário Exemplo 3", "voluntario3", "3333"),
 ]
 
 
@@ -103,10 +104,11 @@ def criar_banco(criar_voluntarios_exemplo: bool):
                 capacidade INTEGER NOT NULL DEFAULT 0
             );
 
+            -- usuario: o que o voluntário digita para entrar (ex.: "contagem"); até 15/10 era o e-mail
             CREATE TABLE IF NOT EXISTS voluntarios (
                 id       INTEGER PRIMARY KEY AUTOINCREMENT,
                 nome     TEXT NOT NULL,
-                email    TEXT NOT NULL UNIQUE,
+                usuario  TEXT NOT NULL UNIQUE,
                 pin_hash TEXT NOT NULL,
                 ativo    INTEGER NOT NULL DEFAULT 1
             );
@@ -153,6 +155,10 @@ def criar_banco(criar_voluntarios_exemplo: bool):
         colunas = [c["name"] for c in conn.execute("PRAGMA table_info(voluntarios)")]
         if "ativo" not in colunas:
             conn.execute("ALTER TABLE voluntarios ADD COLUMN ativo INTEGER NOT NULL DEFAULT 1")
+        # Bancos de antes de 15/10, quando o login era pelo e-mail: a coluna vira "usuario"
+        # (quem já estava cadastrado continua entrando com o e-mail, agora como usuário).
+        if "email" in colunas:
+            conn.execute("ALTER TABLE voluntarios RENAME COLUMN email TO usuario")
 
         # Se o código já existe, atualiza nome e tipo (assim, trocar a lista acima e reiniciar
         # o site já corrige os dados). "excluded" = a linha que tentamos inserir.
@@ -185,8 +191,8 @@ def criar_banco(criar_voluntarios_exemplo: bool):
             conn.execute("DELETE FROM ambientes WHERE codigo = ?", (codigo,))
         if not criar_voluntarios_exemplo:
             return
-        for nome, email, pin in VOLUNTARIOS_EXEMPLO:
+        for nome, usuario, pin in VOLUNTARIOS_EXEMPLO:
             conn.execute(
-                "INSERT OR IGNORE INTO voluntarios (nome, email, pin_hash) VALUES (?, ?, ?)",
-                (nome, email, gerar_hash_pin(pin)),
+                "INSERT OR IGNORE INTO voluntarios (nome, usuario, pin_hash) VALUES (?, ?, ?)",
+                (nome, usuario, gerar_hash_pin(pin)),
             )

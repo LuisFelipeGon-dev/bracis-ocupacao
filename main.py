@@ -3,6 +3,7 @@ import csv
 import hmac
 import io
 import os
+import re
 import secrets
 import sqlite3
 import time
@@ -25,7 +26,8 @@ load_dotenv()  # lê as configurações do arquivo .env, se existir
 # Cuiabá fica em UTC−4 o ano todo (não tem horário de verão).
 FUSO_CUIABA = timezone(timedelta(hours=-4))
 
-# Senha do painel da coordenação. Sem ela no .env, o painel fica desligado.
+# Usuário e senha do painel da coordenação. Sem eles no .env, o painel fica desligado.
+USUARIO_COORDENACAO = os.getenv("USUARIO_COORDENACAO")
 SENHA_COORDENACAO = os.getenv("SENHA_COORDENACAO")
 
 # De quanto em quanto tempo o site relê a planilha da programação.
@@ -84,7 +86,7 @@ database.criar_banco(os.getenv("CRIAR_VOLUNTARIOS_EXEMPLO") == "sim")
 
 # Formatos esperados nos pedidos. O FastAPI recusa sozinho o que vier fora disso.
 class DadosLogin(BaseModel):
-    email: str
+    usuario: str
     pin: str
 
 
@@ -95,12 +97,16 @@ class NovaEstimativa(BaseModel):
 
 
 class LoginCoordenacao(BaseModel):
+    usuario: str
     senha: str
 
 
 class NovoVoluntario(BaseModel):
     nome: str = Field(min_length=1, max_length=100)
-    email: str = Field(min_length=3, max_length=200)
+    usuario: str = Field(min_length=2, max_length=50)
+    # Opcional: a coordenação escolhe a senha (ex.: uma senha única para uma conta de todos).
+    # Vazio = o site sorteia uma de 6 dígitos.
+    pin: str = Field(default="", max_length=20)
 
 
 class ImportarVoluntarios(BaseModel):
@@ -115,15 +121,15 @@ class MudarAtivo(BaseModel):
 # Guardado na memória do servidor (some quando ele reinicia, e tudo bem).
 # Funciona porque o site roda com 1 processo só; com vários, cada um teria sua lista.
 #
-# O bloqueio vale para o par (e-mail, IP): a ideia é bloquear só quem errou.
+# O bloqueio vale para o par (usuário, IP): a ideia é bloquear só quem errou.
 # Hoje o proxy do IC não informa o IP do visitante (todos chegam como 10.4.0.74), então,
-# na prática, vale para o e-mail. Se alguém travar um voluntário de propósito,
-# a coordenação gera um "Novo PIN", que destrava na hora.
+# na prática, vale para o usuário. Numa conta usada por vários voluntários (ex.: "contagem"),
+# 5 erros seguidos travam todos por 5 minutos; a coordenação gera uma "Nova senha", que destrava na hora.
 # (A coordenação não usa este bloqueio: veja login_coordenacao.)
 
 TENTATIVAS_MAXIMAS = 5
 TEMPO_BLOQUEIO = timedelta(minutes=5)
-falhas_login = {}  # (e-mail, IP) -> (quantidade de erros, bloqueado até)
+falhas_login = {}  # (usuário, IP) -> (quantidade de erros, bloqueado até)
 
 
 def ip_de(request: Request) -> str:
@@ -155,7 +161,7 @@ def limpar_falhas(chave: tuple):
 
 
 def liberar_todos_os_ips(quem: str):
-    """Tira o bloqueio de um e-mail em qualquer IP (usado quando a coordenação gera um PIN novo)."""
+    """Tira o bloqueio de um usuário em qualquer IP (usado quando a coordenação gera um PIN novo)."""
     for chave in [c for c in falhas_login if c[0] == quem]:
         del falhas_login[chave]
 
@@ -205,17 +211,17 @@ def pagina_coordenacao():
 
 @rotas.post("/login")
 def login(dados: DadosLogin, request: Request):
-    email = dados.email.strip().lower()
-    chave = (email, ip_de(request))
+    usuario = dados.usuario.strip().lower()
+    chave = (usuario, ip_de(request))
     conferir_bloqueio(chave)
     with database.conectar() as conn:
         voluntario = conn.execute(
-            "SELECT * FROM voluntarios WHERE email = ?", (email,)
+            "SELECT * FROM voluntarios WHERE usuario = ?", (usuario,)
         ).fetchone()
-    # Mesma mensagem para e-mail ou PIN errado, para não revelar quais e-mails existem.
+    # Mesma mensagem para usuário ou senha errados, para não revelar quais usuários existem.
     if voluntario is None or not database.verificar_pin(dados.pin, voluntario["pin_hash"]):
         registrar_falha(chave)
-        raise HTTPException(status_code=401, detail="E-mail ou PIN incorreto.")
+        raise HTTPException(status_code=401, detail="Usuário ou senha incorretos.")
     limpar_falhas(chave)
     if not voluntario["ativo"]:
         raise HTTPException(status_code=403, detail="Sua conta foi desativada.")
@@ -234,7 +240,7 @@ def voluntario_atual(request: Request):
     voluntario_id = exigir_login(request)
     with database.conectar() as conn:
         voluntario = conn.execute(
-            "SELECT id, nome, email FROM voluntarios WHERE id = ?", (voluntario_id,)
+            "SELECT id, nome, usuario FROM voluntarios WHERE id = ?", (voluntario_id,)
         ).fetchone()
     return dict(voluntario)
 
@@ -316,22 +322,25 @@ def registrar_estimativa(dados: NovaEstimativa, request: Request):
 
 # Sem bloqueio depois de erros: o proxy do IC não informa o IP de quem acessa, então um
 # bloqueio valeria para todo mundo, e qualquer pessoa poderia travar o painel errando de propósito.
-# Em vez disso, cada senha errada espera 1 segundo, e a senha do .env deve ser longa
-# (ex.: 4 palavras aleatórias): assim adivinhar levaria milhares de anos.
+# Em vez disso, cada tentativa errada espera 1 segundo. Quanto mais longa a senha do .env,
+# mais tempo levaria para adivinhar.
 ESPERA_SENHA_ERRADA = 1  # segundos
 
 @rotas.post("/coordenacao/login")
 async def login_coordenacao(dados: LoginCoordenacao, request: Request):
-    if not SENHA_COORDENACAO:
+    if not USUARIO_COORDENACAO or not SENHA_COORDENACAO:
         raise HTTPException(
             status_code=503,
-            detail="Painel desligado: defina SENHA_COORDENACAO no arquivo .env.",
+            detail="Painel desligado: defina USUARIO_COORDENACAO e SENHA_COORDENACAO no arquivo .env.",
         )
     # compare_digest compara sem "vazar" pelo tempo de resposta quantas letras acertou.
-    if not hmac.compare_digest(dados.senha.encode(), SENHA_COORDENACAO.encode()):
+    # Confere os dois sempre (e não para no primeiro errado), pelo mesmo motivo.
+    usuario_certo = hmac.compare_digest(dados.usuario.strip().lower().encode(), USUARIO_COORDENACAO.lower().encode())
+    senha_certa = hmac.compare_digest(dados.senha.encode(), SENHA_COORDENACAO.encode())
+    if not (usuario_certo and senha_certa):
         # asyncio.sleep espera sem travar o site: os outros pedidos continuam sendo atendidos.
         await asyncio.sleep(ESPERA_SENHA_ERRADA)
-        raise HTTPException(status_code=401, detail="Senha incorreta.")
+        raise HTTPException(status_code=401, detail="Usuário ou senha incorretos.")
     request.session["coordenacao"] = True
     return {"mensagem": "Bem-vindo(a) ao painel."}
 
@@ -372,26 +381,35 @@ def listar_voluntarios(request: Request):
     exigir_coordenacao(request)
     with database.conectar() as conn:
         linhas = conn.execute(
-            "SELECT id, nome, email, ativo FROM voluntarios ORDER BY nome"
+            "SELECT id, nome, usuario, ativo FROM voluntarios ORDER BY nome"
         ).fetchall()
     return [dict(linha) for linha in linhas]
 
 
-def cadastrar_voluntario(conn, nome: str, email: str) -> dict:
-    """Cria o voluntário com um PIN sorteado. O PIN só é devolvido aqui, uma única vez."""
+# Usuário: letras minúsculas sem acento, números, ponto, hífen, sublinhado e @ (e-mails antigos valem)
+USUARIO_VALIDO = re.compile(r"[a-z0-9._@-]{2,50}")
+
+
+def cadastrar_voluntario(conn, nome: str, usuario: str, pin: str = "") -> dict:
+    """Cria o voluntário. Sem PIN escolhido, sorteia um. O PIN só é devolvido aqui, uma única vez."""
     nome = nome.strip()
-    email = email.strip().lower()
-    if not nome or "@" not in email:
-        raise ValueError("nome ou e-mail inválido")
-    pin = database.gerar_pin()
+    usuario = usuario.strip().lower()
+    pin = pin.strip()
+    if not nome:
+        raise ValueError("falta o nome")
+    if not USUARIO_VALIDO.fullmatch(usuario):
+        raise ValueError("usuário inválido (use letras sem acento e números, sem espaço)")
+    if pin and len(pin) < 4:
+        raise ValueError("a senha precisa ter pelo menos 4 caracteres")
+    pin = pin or database.gerar_pin()
     try:
         conn.execute(
-            "INSERT INTO voluntarios (nome, email, pin_hash) VALUES (?, ?, ?)",
-            (nome, email, database.gerar_hash_pin(pin)),
+            "INSERT INTO voluntarios (nome, usuario, pin_hash) VALUES (?, ?, ?)",
+            (nome, usuario, database.gerar_hash_pin(pin)),
         )
-    except sqlite3.IntegrityError:  # o e-mail é UNIQUE no banco
-        raise ValueError("e-mail já cadastrado")
-    return {"nome": nome, "email": email, "pin": pin}
+    except sqlite3.IntegrityError:  # o usuário é UNIQUE no banco
+        raise ValueError("usuário já cadastrado")
+    return {"nome": nome, "usuario": usuario, "pin": pin}
 
 
 @rotas.post("/coordenacao/voluntarios")
@@ -399,14 +417,14 @@ def criar_voluntario(dados: NovoVoluntario, request: Request):
     exigir_coordenacao(request)
     with database.conectar() as conn:
         try:
-            return cadastrar_voluntario(conn, dados.nome, dados.email)
+            return cadastrar_voluntario(conn, dados.nome, dados.usuario, dados.pin)
         except ValueError as erro:
             raise HTTPException(status_code=400, detail=f"Não foi possível: {erro}.")
 
 
 @rotas.post("/coordenacao/voluntarios/importar")
 def importar_voluntarios(dados: ImportarVoluntarios, request: Request):
-    """Recebe várias linhas "nome, e-mail" (também aceita ; ou tab) e cadastra todas."""
+    """Recebe várias linhas "nome, usuário" ou "nome, usuário, senha" (também aceita ; ou tab)."""
     exigir_coordenacao(request)
     criados, erros = [], []
     with database.conectar() as conn:
@@ -415,13 +433,14 @@ def importar_voluntarios(dados: ImportarVoluntarios, request: Request):
                 continue
             partes = linha.replace(";", ",").replace("\t", ",").split(",")
             if len(partes) < 2:
-                erros.append({"linha": numero, "texto": linha, "motivo": "faltou o e-mail"})
+                erros.append({"linha": numero, "texto": linha, "motivo": "faltou o usuário"})
                 continue
-            nome, email = partes[0], partes[1]
-            if email.strip().lower() in ("email", "e-mail"):
+            nome, usuario = partes[0], partes[1]
+            pin = partes[2] if len(partes) > 2 else ""
+            if usuario.strip().lower() in ("usuario", "usuário"):
                 continue  # linha de cabeçalho copiada da planilha
             try:
-                criados.append(cadastrar_voluntario(conn, nome, email))
+                criados.append(cadastrar_voluntario(conn, nome, usuario, pin))
             except ValueError as erro:
                 erros.append({"linha": numero, "texto": linha, "motivo": str(erro)})
     return {"criados": criados, "erros": erros}
@@ -439,9 +458,9 @@ def trocar_pin(voluntario_id: int, request: Request):
         if cursor.rowcount == 0:
             raise HTTPException(status_code=404, detail="Voluntário não encontrado.")
         voluntario = conn.execute(
-            "SELECT nome, email FROM voluntarios WHERE id = ?", (voluntario_id,)
+            "SELECT nome, usuario FROM voluntarios WHERE id = ?", (voluntario_id,)
         ).fetchone()
-    liberar_todos_os_ips(voluntario["email"])  # PIN novo: libera se estava bloqueado
+    liberar_todos_os_ips(voluntario["usuario"])  # PIN novo: libera se estava bloqueado
     return {**dict(voluntario), "pin": pin}
 
 

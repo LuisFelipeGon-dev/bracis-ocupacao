@@ -41,7 +41,7 @@ async function api(metodo, rota, dados) {
 
 // Os erros que nós escrevemos vêm como texto. Os de formato (422, do FastAPI) vêm como
 // lista, em inglês: aí dizemos só qual campo foi recusado.
-const NOMES_CAMPOS = { email: "e-mail", pin: "PIN", porcentagem: "porcentagem" };
+const NOMES_CAMPOS = { usuario: "usuário", pin: "senha", porcentagem: "porcentagem" };
 function textoDoErro(corpo) {
   if (typeof corpo.detail === "string") return corpo.detail;
   const campo = corpo.detail?.[0]?.loc?.at(-1);
@@ -109,7 +109,7 @@ $("form-login").addEventListener("submit", async (evento) => {
   botao.setAttribute("aria-busy", "true"); // mostra a "rodinha" do Pico
   try {
     const voluntario = await api("POST", "login", {
-      email: form.email.value,
+      usuario: form.usuario.value,
       pin: form.pin.value,
     });
     form.reset();

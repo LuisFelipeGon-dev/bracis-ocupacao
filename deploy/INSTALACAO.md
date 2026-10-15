@@ -69,6 +69,7 @@ Escreva o conteúdo abaixo, trocando os valores. Para salvar: Ctrl+O, Enter; par
 
 ```
 CHAVE_SESSAO=cole-aqui-a-chave-gerada-acima
+USUARIO_COORDENACAO=usuario-da-coordenacao
 SENHA_COORDENACAO=uma-senha-forte-e-diferente-da-de-teste
 URL_PROGRAMACAO="cole-aqui-os-links-csv-das-abas-separados-por-espaco"
 ```
