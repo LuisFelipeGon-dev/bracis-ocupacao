@@ -4,12 +4,16 @@ Aceita dois formatos (o site descobre qual é pelo cabeçalho):
 
 1. Planilha oficial do BRACIS: uma aba por dia e uma linha por ARTIGO, com as colunas
        Date, Event, Location, Start, End, Order, ID, Session, Chair, Title, Authors
+   (no arquivo Excel da coordenação, "Location" se chama "Room / Arena" e "Session", "Session Title")
    As linhas da mesma sessão (mesmo dia, sala, evento e "Session") viram uma sessão só,
    do primeiro início ao último fim.
 
 2. Formato simples: uma linha por sessão, com as colunas
        sala, data, inicio, fim, titulo, palestrante
    Exemplo:  A1, 20/10/2026, 09:00, 10:30, Abertura, Fulano de Tal
+
+O link pode ser de um CSV (Google Sheets) ou de um arquivo Excel (.xlsx) no Google Drive;
+no Excel, cada aba do arquivo vira um CSV e segue o mesmo caminho.
 """
 
 import csv
@@ -17,13 +21,17 @@ import io
 import os
 import unicodedata
 import urllib.request
-from datetime import datetime, timedelta
+from datetime import datetime, time, timedelta
+
+import openpyxl
 
 import database
 
 ARQUIVO_EXEMPLO = "programacao_exemplo.csv"
 COLUNAS = ["sala", "data", "inicio", "fim", "titulo", "palestrante"]
 COLUNAS_OFICIAIS = ["date", "location", "start", "end", "session"]
+# Outros nomes para as mesmas colunas (como estão no arquivo Excel da coordenação)
+SINONIMOS = {"room / arena": "location", "session title": "session"}
 
 # Na planilha oficial, artigos da mesma sessão separados por mais que isto viram duas sessões
 # (ex.: uma trilha com uma parte de manhã e outra à tarde: no almoço a sala não está "em sessão").
@@ -44,21 +52,60 @@ def baixar_planilha() -> tuple[list[str], str]:
     """Devolve (textos dos CSVs, de onde vieram). Sem URL_PROGRAMACAO no .env, usa o arquivo de exemplo.
 
     URL_PROGRAMACAO pode ter vários links separados por espaço: um para cada aba da planilha.
+    Se o link for de um arquivo Excel, cada aba dele vira um texto.
     """
     urls = os.getenv("URL_PROGRAMACAO", "").split()
     if not urls:
         with open(ARQUIVO_EXEMPLO, encoding="utf-8-sig") as arquivo:
             return [arquivo.read()], "arquivo de exemplo"
     textos = []
+    excel = False
     for url in urls:
         with urllib.request.urlopen(url, timeout=20) as resposta:
-            texto = resposta.read().decode("utf-8-sig")
+            conteudo = resposta.read()
+        # Todo arquivo .xlsx começa com "PK" (por dentro ele é um .zip).
+        if conteudo.startswith(b"PK"):
+            textos += abas_do_excel(conteudo)
+            excel = True
+            continue
+        texto = conteudo.decode("utf-8-sig")
         # Se o link for o da planilha "normal" (e não o do CSV), o Google devolve uma página HTML.
         if texto.lstrip().startswith("<"):
             raise ValueError(f"o link {url} não é de um CSV (veja o README, parte da programação)")
         textos.append(texto)
-    origem = "planilha do Google" if len(textos) == 1 else f"planilha do Google ({len(textos)} abas)"
+    origem = "arquivo Excel do Google Drive" if excel else "planilha do Google"
+    if len(textos) > 1:
+        origem += f" ({len(textos)} abas)"
     return textos, origem
+
+
+def abas_do_excel(conteudo: bytes) -> list[str]:
+    """Arquivo .xlsx -> um texto CSV por aba, no mesmo formato que o Google Sheets exporta."""
+    arquivo = openpyxl.load_workbook(io.BytesIO(conteudo), read_only=True, data_only=True)
+    textos = []
+    for aba in arquivo.worksheets:
+        saida = io.StringIO()
+        escritor = csv.writer(saida)
+        for linha in aba.iter_rows(values_only=True):
+            escritor.writerow([celula_como_texto(valor) for valor in linha])
+        textos.append(saida.getvalue())
+    arquivo.close()
+    return textos
+
+
+def celula_como_texto(valor) -> str:
+    """No Excel, datas e horas vêm como datas do Python: viram "19/10/2026" e "08:30"."""
+    if valor is None:
+        return ""
+    if isinstance(valor, time):
+        return valor.strftime("%H:%M")
+    if isinstance(valor, datetime):
+        if valor.year < 1900:  # hora guardada como data (o Excel usa o dia 30/12/1899)
+            return valor.strftime("%H:%M")
+        return valor.strftime("%d/%m/%Y")
+    if isinstance(valor, float) and valor.is_integer():
+        return str(int(valor))  # 1.0 vira "1"
+    return str(valor)
 
 
 def ler_horario(data: str, hora: str) -> str:
@@ -76,11 +123,11 @@ def ler_horario(data: str, hora: str) -> str:
 
 def interpretar(texto: str, ambientes: list[dict]) -> tuple[list[tuple], list[dict]]:
     """Confere cada linha da planilha. Devolve (sessões válidas, erros encontrados)."""
-    # A sala pode vir pelo código (A1), pelo nome (Pantanal Auditorium) ou pelo nome da planilha (Arena 1).
+    # A sala pode vir pelo código (A1), pelo nome (Pantanal Auditorium) ou pelo nome da planilha (Arena 1, Nobres Room).
     codigo_por_nome = {}
     for ambiente in ambientes:
         codigo = ambiente["codigo"]
-        for nome in (codigo, ambiente["nome"], database.NOMES_NA_PLANILHA.get(codigo, codigo)):
+        for nome in (codigo, ambiente["nome"], *database.NOMES_NA_PLANILHA.get(codigo, ())):
             codigo_por_nome[simplificar(nome)] = codigo
 
     # Planilhas salvas pelo Excel em português costumam separar com ";".
@@ -89,6 +136,7 @@ def interpretar(texto: str, ambientes: list[dict]) -> tuple[list[tuple], list[di
     leitor = csv.reader(io.StringIO(texto), delimiter=separador)
 
     cabecalho = [simplificar(coluna) for coluna in next(leitor, [])]
+    cabecalho = [SINONIMOS.get(coluna, coluna) for coluna in cabecalho]
     if all(coluna in cabecalho for coluna in COLUNAS_OFICIAIS):
         return interpretar_oficial(leitor, cabecalho, codigo_por_nome)
     faltando = [coluna for coluna in COLUNAS[:5] if coluna not in cabecalho]
@@ -105,7 +153,7 @@ def interpretar(texto: str, ambientes: list[dict]) -> tuple[list[tuple], list[di
             codigo = codigo_por_nome.get(simplificar(linha.get("sala", "")))
             if codigo is None:
                 raise ValueError(f'sala "{linha.get("sala", "")}" não existe')
-            titulo = linha.get("titulo", "").strip()
+            titulo = " ".join(linha.get("titulo", "").split())
             if not titulo:
                 raise ValueError("falta o título")
             try:
@@ -118,7 +166,7 @@ def interpretar(texto: str, ambientes: list[dict]) -> tuple[list[tuple], list[di
             palestrante = linha.get("palestrante", "").strip() or None
             sessoes.append((codigo, titulo, palestrante, inicio, fim))
         except ValueError as erro:
-            erros.append({"linha": numero, "motivo": f"{erro} (linha ignorada)"})
+            erros.append({"linha": numero, "motivo": f"{erro} (linha ignorada)", "sala": codigo})
     return sessoes, erros
 
 
@@ -130,7 +178,8 @@ def interpretar_oficial(leitor, cabecalho: list[str], codigo_por_nome: dict) -> 
     for numero, valores in enumerate(leitor, start=2):
         if not any(valor.strip() for valor in valores):
             continue  # linha em branco
-        linha = {coluna: valor.strip() for coluna, valor in zip(cabecalho, valores)}
+        # " ".join(split()): tira espaços sobrando e as quebras de linha dentro da célula (comuns no Excel)
+        linha = {coluna: " ".join(valor.split()) for coluna, valor in zip(cabecalho, valores)}
         try:
             codigo = codigo_por_nome.get(simplificar(linha.get("location", "")))
             if codigo is None:
@@ -141,14 +190,17 @@ def interpretar_oficial(leitor, cabecalho: list[str], codigo_por_nome: dict) -> 
             except ValueError:
                 raise ValueError("data ou hora em formato errado (use 20/10/2026 e 09:00)")
         except ValueError as erro:
-            erros.append({"linha": numero, "motivo": f"{erro} (linha ignorada)"})
+            erros.append({"linha": numero, "motivo": f"{erro} (linha ignorada)", "sala": codigo})
             continue
         if fim <= inicio:
             # Visto na planilha: o início de alguns artigos saiu errado, mas o fim está certo.
             # Usamos só o fim, que já basta para saber até quando vai a sessão.
             erros.append({"linha": numero, "motivo": f"o início ({inicio[11:]}) está depois do fim ({fim[11:]}); usamos só o fim"})
             inicio = fim
-        chave = (linha["date"], codigo, simplificar(linha.get("event", "")), linha["session"])
+        sessao = linha.get("session", "")
+        if sessao in ("-", "–"):
+            sessao = ""  # "-" na planilha = sessão sem nome
+        chave = (linha.get("date", ""), codigo, simplificar(linha.get("event", "")), sessao)
         artigo = (inicio, fim, linha.get("title", ""), linha.get("authors", ""), linha.get("chair", ""),
                   linha.get("id", ""), numero)
         grupos.setdefault(chave, []).append(artigo)
@@ -218,9 +270,12 @@ def atualizar(conn) -> dict:
 
     ambientes = [dict(a) for a in conn.execute("SELECT codigo, nome FROM ambientes")]
     sessoes, erros = [], []
+    abas_vazias = []
     for numero_aba, texto in enumerate(textos, start=1):
         sessoes_aba, erros_aba = interpretar(texto, ambientes)
         sessoes += sessoes_aba
+        if not sessoes_aba:
+            abas_vazias.append(numero_aba)
         for erro in erros_aba:
             if len(textos) > 1:
                 erro["aba"] = numero_aba  # na ordem dos links do URL_PROGRAMACAO
@@ -231,6 +286,31 @@ def atualizar(conn) -> dict:
     if not sessoes:
         ultima_leitura["falha"] = "Nenhuma linha válida na planilha. A programação anterior foi mantida."
         return ultima_leitura
+    # Uma aba sem nada válido (cabeçalho mexido, aba apagada enquanto alguém edita...) apagaria
+    # aquele dia inteiro do totem. Melhor esperar a próxima leitura com a programação antiga.
+    if abas_vazias and len(textos) > 1:
+        lista = ", ".join(str(numero) for numero in abas_vazias)
+        ultima_leitura["falha"] = (f"A aba {lista} não tem nenhuma linha válida. "
+                                   "A programação anterior foi mantida.")
+        return ultima_leitura
+
+    # Linha estragada numa sala que existe (hora apagada, data errada...): a sessão sumiria e o
+    # totem diria "No session now" com a sala cheia. Nessa sala fica a programação anterior até
+    # corrigirem a planilha; as outras salas recebem as mudanças normalmente.
+    # (Sala com nome que não existe não entra aqui: não dá para saber de qual sala era a linha.)
+    nomes = {ambiente["codigo"]: ambiente["nome"] for ambiente in ambientes}
+    mantidas = []
+    for codigo in sorted({erro["sala"] for erro in erros if erro.get("sala")}):
+        anteriores = conn.execute(
+            "SELECT ambiente_codigo, titulo, palestrante, inicio, fim FROM sessoes WHERE ambiente_codigo = ?",
+            (codigo,),
+        ).fetchall()
+        if anteriores:  # sem programação anterior (ex.: primeira leitura), fica o que deu para ler
+            sessoes = [sessao for sessao in sessoes if sessao[0] != codigo] + [tuple(s) for s in anteriores]
+            mantidas.append(nomes.get(codigo, codigo))
+    if mantidas:
+        ultima_leitura["falha"] = (f"Há linhas com erro em: {', '.join(mantidas)} (veja abaixo). Nessas salas o "
+                                   "totem continua com a programação anterior até a planilha ser corrigida.")
 
     # Apaga e grava na mesma transação: quem consulta o site vê a programação
     # antiga ou a nova, nunca uma mistura das duas.

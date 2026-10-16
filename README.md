@@ -57,9 +57,11 @@ versões novas do site. Sem conexão por mais de 2 minutos, os cartões ficam ap
 
 ## Programação (planilha)
 
-A programação vem da planilha oficial do Google Sheets, lida como CSV. Cada aba (um dia) tem um link,
-e os links ficam em `URL_PROGRAMACAO` no `.env`, separados por espaço (os 4 links prontos estão no
-`.env.example`). O site relê a planilha ao ligar, a cada 10 minutos e pelo botão no painel da coordenação.
+Desde 16/10 a programação vem do arquivo Excel da coordenação no Google Drive ("Toda Programação
+Detalhada.xlsx", uma aba por dia). O link fica em `URL_PROGRAMACAO` no `.env` (pronto no `.env.example`);
+o site baixa o arquivo e lê todas as abas. Quem editar o arquivo no Drive muda o totem em até 10 minutos.
+Também funciona uma planilha do Google Sheets lida como CSV: um link por aba, separados por espaço.
+O site relê a programação ao ligar, a cada 10 minutos e pelo botão no painel da coordenação.
 
 A planilha oficial tem uma linha por artigo:
 
@@ -70,8 +72,9 @@ A planilha oficial tem uma linha por artigo:
 O site junta os artigos da mesma sessão (mesmo dia, sala, evento e `Session`) numa sessão só, do
 primeiro início ao último fim, e é o nome da sessão que aparece no totem. Palestras e minicursos
 (linhas sem `ID`) aparecem como "Session: Title", ex.: "Keynote: The Design of Physical Intelligence".
-A coluna `Location` usa os nomes da planilha (Room 1…5, Arena 1 e 2); a correspondência com os
-nomes do totem fica em `NOMES_NA_PLANILHA`, no `database.py`. Linhas com problema aparecem no
+A coluna da sala (`Location` ou `Room / Arena`) pode trazer o nome real (Nobres Room, Pantanal
+Auditorium) ou o da planilha antiga (Room 1…5, Arena 1 e 2); a correspondência com os nomes do totem
+fica em `NOMES_NA_PLANILHA`, no `database.py`. Linhas com problema aparecem no
 painel da coordenação, com o número da aba e da linha.
 
 Também funciona uma planilha simples, com uma linha por sessão:

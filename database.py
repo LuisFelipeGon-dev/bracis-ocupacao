@@ -18,16 +18,18 @@ AMBIENTES_EXEMPLO = [
     ("A2", "Cerrado Auditorium", "auditorio"),
 ]
 
-# Como cada ambiente aparece na coluna "Location" da planilha oficial da programação.
-# (Na planilha a sala também pode vir pelo código ou pelo nome de cima.)
+# Como cada ambiente aparece na coluna da sala nas planilhas da programação.
+# (A sala também pode vir pelo código ou pelo nome de cima.)
+# Atenção: na planilha antiga, "Room 4" é a Chapada e "Room 5" é a Vila Bela (conferido em 16/10
+# com o arquivo "Toda Programação Detalhada.xlsx", que já usa os nomes reais).
 NOMES_NA_PLANILHA = {
-    "S1": "Room 1",
-    "S2": "Room 2",
-    "S3": "Room 3",
-    "S4": "Room 4",
-    "S5": "Room 5",
-    "A1": "Arena 1",
-    "A2": "Arena 2",
+    "S1": ("Room 1", "Nobres Room"),
+    "S2": ("Room 2", "Araguaia Room"),
+    "S3": ("Room 3", "Xingu Room"),
+    "S4": ("Room 5", "Vila Bela Room"),
+    "S5": ("Room 4", "Chapada Room"),
+    "A1": ("Arena 1",),
+    "A2": ("Arena 2",),
 }
 
 # (nome, usuário, PIN): só no computador de desenvolvimento

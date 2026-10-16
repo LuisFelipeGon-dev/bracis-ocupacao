@@ -58,7 +58,13 @@ async def reler_programacao_sempre():
     while True:
         # to_thread: baixar a planilha pode demorar alguns segundos; rodando à parte,
         # o site continua respondendo aos outros pedidos enquanto isso.
-        await asyncio.to_thread(atualizar_programacao)
+        try:
+            await asyncio.to_thread(atualizar_programacao)
+        except Exception as erro:
+            # Sem isto, um erro inesperado pararia a releitura até o site reiniciar.
+            # O erro aparece no painel da coordenação e no log (journalctl -u bracis).
+            programacao.ultima_leitura["falha"] = f"Erro ao ler a planilha: {erro!r}. Nova tentativa em 10 min."
+            print("Erro ao ler a planilha:", repr(erro), flush=True)
         await asyncio.sleep(INTERVALO_PROGRAMACAO.total_seconds())
 
 
