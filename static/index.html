@@ -8,10 +8,10 @@
   <title>Room Occupancy · BRACIS 2026</title>
   <!-- Tela do totem (em pé, sem interação). Feita para duas telas: totem 1080 × 1920 e
        painel 336 × 1008 (o publico.css escolhe o layout pelo formato da tela).
-       ?v=11: muda a cada atualização, para o navegador não misturar arquivo novo com antigo guardado -->
+       ?v=12: muda a cada atualização, para o navegador não misturar arquivo novo com antigo guardado -->
   <link rel="preload" href="static/fontes/bricolage-grotesque.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="static/tokens.css?v=11">
-  <link rel="stylesheet" href="static/publico.css?v=11">
+  <link rel="stylesheet" href="static/tokens.css?v=12">
+  <link rel="stylesheet" href="static/publico.css?v=12">
 </head>
 <body>
   <header class="topo">
@@ -21,13 +21,16 @@
   </header>
 
   <!-- As salas são criadas pelo participante.js -->
-  <main id="salas" class="salas"></main>
+  <main id="salas" class="salas">
+    <!-- Aparece até os dados chegarem (ex.: totem ligado antes da internet) -->
+    <p class="carregando">Loading…</p>
+  </main>
 
   <footer class="rodape">
     Occupancy estimated by volunteers in each room · updated during each session
   </footer>
 
-  <script src="static/comum.js?v=11"></script>
-  <script src="static/participante.js?v=11"></script>
+  <script src="static/comum.js?v=12"></script>
+  <script src="static/participante.js?v=12"></script>
 </body>
 </html>

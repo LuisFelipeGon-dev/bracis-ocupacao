@@ -56,7 +56,7 @@ const ORDEM_TIPO = { auditorio: 0, sala: 1, laboratorio: 2 };
 function ordenarSalas(lista) {
   return [...lista].sort((a, b) =>
     (ORDEM_TIPO[a.tipo] ?? 9) - (ORDEM_TIPO[b.tipo] ?? 9) ||
-    a.codigo.localeCompare(b.codigo, undefined, { numeric: true }));
+    String(a.codigo ?? "").localeCompare(String(b.codigo ?? ""), undefined, { numeric: true }));
 }
 
 // Os horários vêm do servidor como "2026-10-20T09:00" (horário de Cuiabá).

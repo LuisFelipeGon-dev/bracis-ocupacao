@@ -84,6 +84,14 @@ h1, h2, p { margin: 0; }
   transition: opacity 600ms cubic-bezier(0.16, 1, 0.3, 1), filter 600ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+/* Antes dos primeiros dados chegarem */
+.carregando {
+  align-self: center;
+  text-align: center;
+  font-size: calc(4 * var(--u));
+  color: var(--muted);
+}
+
 /* Sem conexão há mais de 2 minutos: os números podem estar velhos */
 .salas.desatualizado {
   opacity: 0.35;

@@ -53,6 +53,7 @@ confere("60% aparece como 60%", nivelDaSala(com(60)).texto, "60%");
 const lista = [{ tipo: "sala", codigo: "S1" }, { tipo: "auditorio", codigo: "A2" }, { tipo: "auditorio", codigo: "A1" }, { tipo: "sala", codigo: "S10" }];
 confere("ordem fixa", ordenarSalas(lista).map((a) => a.codigo).join(), "A1,A2,S1,S10");
 confere("não altera a lista original", lista[0].codigo, "S1");
+confere("sala sem código não quebra a ordem", ordenarSalas([{ tipo: "sala" }, { tipo: "auditorio", codigo: "A1" }]).length, 2);
 
 // quandoProxima
 confere("próxima hoje: só a hora", quandoProxima({ inicio: "2026-10-20T14:00", hoje: true }), "14:00");

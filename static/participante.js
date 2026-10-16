@@ -61,6 +61,21 @@ function criarSala(ambiente) {
   return sala;
 }
 
+// Se os dados de uma sala vierem estranhos, só ela aparece como "Loading…": as outras seguem normais
+// (sem isto, o erro numa sala impediria a tela inteira de atualizar).
+function criarSalaSegura(ambiente) {
+  try {
+    return criarSala(ambiente);
+  } catch (erro) {
+    console.error("Sala com dados estranhos:", ambiente, erro);
+    const sala = el("article", "sala nivel-sem");
+    const info = el("div", "sala-info");
+    info.append(el("h2", "sala-nome", ambiente?.nome ?? ""), el("p", "sala-agora sem-sessao", "Loading…"));
+    sala.append(info);
+    return sala;
+  }
+}
+
 
 // ---------- Conexão ----------
 
@@ -84,7 +99,7 @@ async function atualizar() {
       location.reload();
       return;
     }
-    $("salas").replaceChildren(...ordenarSalas(ambientes).map(criarSala));
+    $("salas").replaceChildren(...ordenarSalas(ambientes).map(criarSalaSegura));
     mostrarConexao(true);
   } catch {
     // Mantém os últimos números na tela (e apaga as salas se demorar).
